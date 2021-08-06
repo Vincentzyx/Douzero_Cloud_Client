@@ -7,7 +7,10 @@ import time
 import json
 import hashlib
 debug = False
-HOST = "http://38.143.2.143:15000"
+google_cloud = True
+HOST = "http://mc.vcccz.com:15000"
+if google_cloud:
+    HOST = "http://38.143.2.143:15000"
 if debug:
     HOST = "http://127.0.0.1:5000"
 
