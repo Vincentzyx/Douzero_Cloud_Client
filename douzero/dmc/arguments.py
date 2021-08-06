@@ -11,7 +11,7 @@ parser.add_argument('--objective', default='adp', type=str, choices=['adp', 'wp'
                     help='Use ADP or WP as reward (default: ADP)')    
 
 # Training settings
-parser.add_argument('--actor_device_cpu', action='store_true',
+parser.add_argument('--actor_device_cpu', action='store_true', default=True,
                     help='Use CPU as actor device')
 parser.add_argument('--gpu_devices', default='0', type=str,
                     help='Which GPUs to be used for training')
