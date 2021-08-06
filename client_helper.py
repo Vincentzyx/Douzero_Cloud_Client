@@ -7,7 +7,7 @@ import time
 import json
 import hashlib
 debug = False
-HOST = "http://mc.vcccz.com:15000"
+HOST = "http://38.143.2.143:15000"
 if debug:
     HOST = "http://127.0.0.1:5000"
 
