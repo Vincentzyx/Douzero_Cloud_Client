@@ -76,7 +76,26 @@ def handle_batches(batches, model_version):
         }
         # print(batches)
         data = pickle.dumps(info)
-        rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'})
+        tryCount = 2
+        try:
+            rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=10)
+        except:
+            rep = {
+                "status_code": -1
+            }
+        while rep.status_code != 200 and tryCount > 0:
+            tryCount -= 1
+            print("传输失败，重试中")
+            try:
+                rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=10)
+            except:
+                rep = {
+                    "status_code": -1
+                }
+        if rep.status_code == 200:
+            print("传输成功")
+        else:
+            print("传输失败")
         try:
             ret = rep.json()
             print(ret)
