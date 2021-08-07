@@ -6,6 +6,7 @@ import requests
 import time
 import json
 import hashlib
+import traceback
 debug = False
 google_cloud = True
 HOST = "http://mc.vcccz.com:15000"
@@ -82,7 +83,6 @@ def handle_batches(batches, model_version):
     try:
         try:
             rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=60)
-            print(rep.status_code)
         except TimeoutError:
             rep = None
             print("传输超时")
@@ -91,7 +91,6 @@ def handle_batches(batches, model_version):
             print("传输失败，重试中")
             try:
                 rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=60)
-                print(rep.status_code)
             except TimeoutError:
                 rep = None
                 print("传输超时")
@@ -108,8 +107,8 @@ def handle_batches(batches, model_version):
                     return -1, ""
             except json.JSONDecodeError:
                 print("Json Decode Error")
-    except:
-        print("未知错误导致Batch传送失败")
+    except Exception as e:
+        print("Batch传送失败:", repr(e))
 
     return model_version, ""
 
