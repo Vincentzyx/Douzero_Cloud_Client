@@ -78,6 +78,7 @@ def handle_batches(batches, model_version):
     data = pickle.dumps(info)
     tryCount = 2
     rep = None
+    print("准备发送Batch")
     try:
         rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=50)
         print(rep.status_code)
