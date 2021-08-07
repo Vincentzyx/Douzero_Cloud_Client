@@ -77,34 +77,34 @@ def handle_batches(batches, model_version):
     # print(batches)
     data = pickle.dumps(info)
     tryCount = 2
+    rep = None
     try:
-        rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=10)
+        rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=50)
+        print(rep.status_code)
     except:
-        rep = {
-            "status_code": -1
-        }
-    while rep.status_code != 200 and tryCount > 0:
+        rep = None
+    while rep is not None and rep.status_code != 200 and tryCount > 0:
         tryCount -= 1
         print("传输失败，重试中")
         try:
-            rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=10)
+            rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=50)
+            print(rep.status_code)
         except:
-            rep = {
-                "status_code": -1
-            }
-    if rep.status_code == 200:
+            rep = None
+            print("传输超时")
+    if rep is not None and rep.status_code == 200:
         print("传输成功")
-    else:
-        print("传输失败")
-    try:
-        ret = rep.json()
-        print(ret)
-        if "server_speed" in ret:
-            print("上传成功，服务器当前速度: %.1f fps" % ret["server_speed"])
-        if "model_version" in ret:
-            return ret["model_version"], ret["model_url"]
-    except json.JSONDecodeError:
-        print("Json Decode Error")
+        try:
+            ret = rep.json()
+            print(ret)
+            if "server_speed" in ret:
+                print("上传成功，服务器当前速度: %.1f fps" % ret["server_speed"])
+            if "model_version" in ret:
+                return ret["model_version"], ret["model_url"]
+        except json.JSONDecodeError:
+            print("Json Decode Error")
+        else:
+            print("传输失败")
 
     return model_version, ""
 
