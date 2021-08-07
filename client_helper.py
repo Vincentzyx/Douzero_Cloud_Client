@@ -80,15 +80,16 @@ def handle_batches(batches, model_version):
     rep = None
     print("准备发送Batch")
     try:
-        rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=50)
+        rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=10)
         print(rep.status_code)
     except:
         rep = None
+        print("传输超时")
     while rep is not None and rep.status_code != 200 and tryCount > 0:
         tryCount -= 1
         print("传输失败，重试中")
         try:
-            rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=50)
+            rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream'}, timeout=10)
             print(rep.status_code)
         except:
             rep = None
@@ -102,10 +103,10 @@ def handle_batches(batches, model_version):
                 print("上传成功，服务器当前速度: %.1f fps" % ret["server_speed"])
             if "model_version" in ret:
                 return ret["model_version"], ret["model_url"]
+            else:
+                return -1, ""
         except json.JSONDecodeError:
             print("Json Decode Error")
-        else:
-            print("传输失败")
 
     return model_version, ""
 
