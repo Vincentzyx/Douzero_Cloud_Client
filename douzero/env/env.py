@@ -45,7 +45,7 @@ class Env:
 
         # Initialize the internal environment
         self._env = GameEnv(self.players)
-
+        self.step_count = 0
         self.infoset = None
 
     def reset(self):
@@ -55,7 +55,7 @@ class Env:
         This function is usually called when a game is over.
         """
         self._env.reset()
-
+        self.step_count = 0
         # Randomly shuffle the deck
         redo = True
         while redo:
@@ -103,6 +103,7 @@ class Env:
         self._env.step()
         self.infoset = self._game_infoset
         done = False
+        self.step_count += 1
         reward = 0.0
         if self._game_over:
             done = True
@@ -122,12 +123,12 @@ class Env:
         bomb_num = self._game_bomb_num
         if winner == 'landlord':
             if self.objective == 'adp':
-                return 2.0 ** bomb_num
+                return 1.0 + bomb_num - self.step_count * 0.0033
             else:
                 return 1.0
         else:
             if self.objective == 'adp':
-                return -2.0 ** bomb_num
+                return -1.0 - bomb_num + self.step_count * 0.0033
             else:
                 return -1.0
 
