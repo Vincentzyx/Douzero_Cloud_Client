@@ -31,9 +31,9 @@ parser.add_argument('--savedir', default='douzero_checkpoints',
 # Hyperparameters
 parser.add_argument('--total_frames', default=100000000000, type=int,
                     help='Total environment frames to train for')
-parser.add_argument('--exp_epsilon', default=0.01, type=float,
+parser.add_argument('--exp_epsilon', default=0.02, type=float,
                     help='The probability for exploration')
-parser.add_argument('--batch_size', default=32, type=int,
+parser.add_argument('--batch_size', default=16, type=int,
                     help='Learner batch size')
 parser.add_argument('--unroll_length', default=100, type=int,
                     help='The unroll length (time dimension)')
