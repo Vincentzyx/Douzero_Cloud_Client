@@ -78,7 +78,8 @@ def handle_batches(batches, model_version):
         "model_version": model_version
     }
     # print(batches)
-    data = gzip.compress(pickle.dumps(info))
+    data = pickle.dumps(info)
+    data = gzip.compress(data)
     tryCount = 2
     rep = None
     print("准备发送Batch")
@@ -128,4 +129,7 @@ def download_obj(url):
     return req.content
 
 def download_pkl(url):
-    return pickle.loads(download_obj(url))
+    try:
+        return pickle.loads(download_obj(url))
+    except:
+        return None
