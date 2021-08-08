@@ -57,20 +57,24 @@ class Env:
         self._env.reset()
 
         # Randomly shuffle the deck
-        _deck = deck.copy()
-        np.random.shuffle(_deck)
-        c1, c2, c3, llc = _deck[:17], _deck[17:34], _deck[34:51], _deck[51:54]
-        p1, p2, p3 = BidModel.predict_env(c1), BidModel.predict_env(c2), BidModel.predict_env(c3)
-        if p1 < p2:
-            p1, p2 = p2, p1
-            c1, c2 = c2, c1
-        if p2 < p3:
-            p2, p3 = p3, p2
-            c2, c3 = c3, c2
-        if p1 < p2:
-            p1, p2 = p2, p1
-            c1, c2 = c2, c1
-        c1.extend(llc)
+        redo = True
+        while redo:
+            _deck = deck.copy()
+            np.random.shuffle(_deck)
+            c1, c2, c3, llc = _deck[:17], _deck[17:34], _deck[34:51], _deck[51:54]
+            p1, p2, p3 = BidModel.predict_env(c1), BidModel.predict_env(c2), BidModel.predict_env(c3)
+            if p1 < p2:
+                p1, p2 = p2, p1
+                c1, c2 = c2, c1
+            if p2 < p3:
+                p2, p3 = p3, p2
+                c2, c3 = c3, c2
+            if p1 < p2:
+                p1, p2 = p2, p1
+                c1, c2 = c2, c1
+            if p1 >= 60:
+                redo = False
+            c1.extend(llc)
         card_play_data = {'landlord': c1,
                           'landlord_up': c2,
                           'landlord_down': c3,
