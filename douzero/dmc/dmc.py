@@ -8,6 +8,7 @@ from collections import deque
 import torch
 from torch import multiprocessing as mp
 from torch import nn
+import pickle
 
 from .file_writer import FileWriter
 from .models import Model
@@ -35,6 +36,7 @@ def learn(position, actor_models, model, batch, optimizer, flags, lock):
         "position": position,
         "batch": batch
     })
+
     return {
         'mean_episode_return_' + position: 0,
         'loss_' + position: 0,
@@ -94,19 +96,22 @@ def train(flags):
         if model_version != ver or force:
             print("检测到模型更新")
             st = time.time()
-            model_version = ver
             weights = client_helper.download_pkl(url)
-            for position in ["landlord", "landlord_up", "landlord_down"]:
-                if flags.actor_device_cpu:
-                    models[0].get_model(position).load_state_dict(weights[position])
-                    torch.save(weights[position], "./models/" + position + ".ckpt")
-                else:
-                    for device in range(flags.num_actor_devices):
-                        models[device].get_model(position).load_state_dict(weights[position])
+            if weights != None:
+                model_version = ver
+                for position in ["landlord", "landlord_up", "landlord_down"]:
+                    if flags.actor_device_cpu:
+                        models[0].get_model(position).load_state_dict(weights[position])
                         torch.save(weights[position], "./models/" + position + ".ckpt")
-            with open("./model_version.txt", "w") as f:
-                f.write(str(model_version))
-            print("更新模型成功！耗时: %.1f s" % (time.time() - st))
+                    else:
+                        for device in range(flags.num_actor_devices):
+                            models[device].get_model(position).load_state_dict(weights[position])
+                            torch.save(weights[position], "./models/" + position + ".ckpt")
+                with open("./model_version.txt", "w") as f:
+                    f.write(str(model_version))
+                print("更新模型成功！耗时: %.1f s" % (time.time() - st))
+            else:
+                print("更新模型失败！")
 
     def load_actor_models():
         global model_version, models
@@ -226,6 +231,8 @@ def train(flags):
                     print("新模型:", ver)
                     update_model(ver, url, True)
                     print("更新完成！耗时: %.1f s" % (time.time() - st))
+            else:
+                print("没有新Batch")
             time.sleep(15)
 
     def check_model_update_loop():

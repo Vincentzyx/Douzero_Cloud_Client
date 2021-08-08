@@ -9,7 +9,7 @@ import hashlib
 import traceback
 import gzip
 debug = False
-google_cloud = True
+google_cloud = False
 HOST = "http://mc.vcccz.com:15000"
 if google_cloud:
     HOST = "http://cf.vcccz.com"
@@ -78,8 +78,7 @@ def handle_batches(batches, model_version):
         "model_version": model_version
     }
     # print(batches)
-    data = pickle.dumps(info)
-    data = gzip.compress(data)
+    data = gzip.compress(pickle.dumps(info))
     tryCount = 2
     rep = None
     print("准备发送Batch")
