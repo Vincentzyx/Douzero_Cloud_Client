@@ -123,12 +123,12 @@ class Env:
         bomb_num = self._game_bomb_num
         if winner == 'landlord':
             if self.objective == 'adp':
-                return 1.0 + bomb_num - self.step_count * 0.0033
+                return 1.0 + bomb_num*0.1 - self.step_count * 0.003
             else:
                 return 1.0
         else:
             if self.objective == 'adp':
-                return -1.0 - bomb_num + self.step_count * 0.0033
+                return -1.0 - bomb_num*0.1 + self.step_count * 0.003
             else:
                 return -1.0
 
