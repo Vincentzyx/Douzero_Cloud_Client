@@ -72,7 +72,7 @@ class Env:
             if p1 < p2:
                 p1, p2 = p2, p1
                 c1, c2 = c2, c1
-            if p1 >= 60:
+            if p1 >= 45:
                 redo = False
             c1.extend(llc)
         card_play_data = {'landlord': c1,
