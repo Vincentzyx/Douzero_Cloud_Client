@@ -72,8 +72,7 @@ class Env:
             if p1 < p2:
                 p1, p2 = p2, p1
                 c1, c2 = c2, c1
-            if p1 >= 45:
-                redo = False
+            redo = False
             c1.extend(llc)
         card_play_data = {'landlord': c1,
                           'landlord_up': c2,
@@ -123,12 +122,12 @@ class Env:
         bomb_num = self._game_bomb_num
         if winner == 'landlord':
             if self.objective == 'adp':
-                return 1.0 + bomb_num*0.1 - self.step_count * 0.003
+                return 1.0 + bomb_num*0.4 - self.step_count * 0.003
             else:
                 return 1.0
         else:
             if self.objective == 'adp':
-                return -1.0 - bomb_num*0.1 + self.step_count * 0.003
+                return -1.0 - bomb_num*0.4 + self.step_count * 0.003
             else:
                 return -1.0
 
