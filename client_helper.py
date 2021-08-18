@@ -31,7 +31,7 @@ def pack_batch(batch):
         "episode_return": batch["episode_return"].tolist(),
         "target": batch["target"].tolist(),
         "obs_x_batch": pack_item(torch.tensor(batch["obs_x_batch"], dtype=torch.int8)),
-        "obs_z": pack_item(torch.tensor(batch["obs_z"], dtype=torch.int8)),
+        "obs_z": batch["obs_z"].tolist(),
         "obs_type": batch["obs_type"].tolist()
     }
     return data
@@ -43,7 +43,7 @@ def unpack_batch(data):
         "episode_return": torch.tensor(data["episode_return"], dtype=torch.float32),
         "target": torch.tensor(data["target"], dtype=torch.float32),
         "obs_x_batch": unpack_item(data["obs_x_batch"]),
-        "obs_z": unpack_item(data["obs_z"]),
+        "obs_z": torch.tensor(data["obs_z"], dtype=torch.int8),
         "obs_type": torch.tensor(data["obs_type"], dtype=torch.int8)
     }
     return batch
