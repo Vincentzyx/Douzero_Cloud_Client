@@ -205,12 +205,9 @@ def train(flags):
                 ver, urls = client_helper.handle_batches(my_batches, model_version, program_version)
                 st = time.time()
                 if len(urls) > 0:
-                    url = urls[random.randint(0, len(urls)-1)]
-                    print("Model urls:", urls)
-                    print("Model url:", url)
-                    if ver != model_version and url != "":
+                    if ver != model_version:
                         print("新模型:", ver)
-                        update_model(ver, url, True)
+                        update_model(ver, urls, True)
                         print("更新完成！耗时: %.1f s" % (time.time() - st))
                 else:
                     print("没有收到模型下载地址")
@@ -243,8 +240,8 @@ def train(flags):
                     if "program_version" in info:
                         if info["program_version"] != program_version:
                             print("客户端版本过时，请从Github重新拉取")
-                    ver, url = info["version"], info["urls"]
-                    update_model(ver, url, False)
+                    ver, urls = info["version"], info["urls"]
+                    update_model(ver, urls, False)
                     env_ver = info["env_version"]
                     update_env(env_ver, info["env_url"])
             except Exception as e:
