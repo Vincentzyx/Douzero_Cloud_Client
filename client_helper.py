@@ -16,22 +16,24 @@ if google_cloud:
 if debug:
     HOST = "http://127.0.0.1:5000"
 
-def pack_item(item):
+def pack_item(item, mask=0b00000001):
     return {
         "shape": list(item.shape),
-        "bits": bit_helper.packbits(item).tolist()
+        "bits": bit_helper.packbits(item, mask=mask).tolist()
     }
 
-def unpack_item(item):
-    return bit_helper.unpackbits(torch.tensor(item["bits"], dtype=torch.int8), item["shape"])
+def unpack_item(item, mask=0b00000001):
+    return bit_helper.unpackbits(torch.tensor(item["bits"], dtype=torch.int8, mask=mask), item["shape"])
+
 
 def pack_batch(batch):
+    print(batch["obs_z"])
     data = {
         "done": pack_item(torch.tensor(batch["done"], dtype=torch.int8)),
         "episode_return": batch["episode_return"].tolist(),
         "target": batch["target"].tolist(),
         "obs_x_batch": pack_item(torch.tensor(batch["obs_x_batch"], dtype=torch.int8)),
-        "obs_z": batch["obs_z"].tolist(),
+        "obs_z": pack_item(batch["obs_z"].to(torch.int8)+1, mask=0b00000011),
         "obs_type": batch["obs_type"].tolist()
     }
     return data
@@ -43,7 +45,7 @@ def unpack_batch(data):
         "episode_return": torch.tensor(data["episode_return"], dtype=torch.float32),
         "target": torch.tensor(data["target"], dtype=torch.float32),
         "obs_x_batch": unpack_item(data["obs_x_batch"]),
-        "obs_z": torch.tensor(data["obs_z"], dtype=torch.int8),
+        "obs_z": unpack_item(data["obs_z"],mask=0b00000011)-1,
         "obs_type": torch.tensor(data["obs_type"], dtype=torch.int8)
     }
     return batch

@@ -34,7 +34,7 @@ def compute_loss(logits, targets):
 
 
 batches = []
-program_version = "2.0.1"
+program_version = "2.0.2"
 
 def learn(position, actor_models, model, batch, optimizer, flags, lock):
     global model_version, models, batches
@@ -75,6 +75,7 @@ def train(flags):
         assert flags.num_actor_devices <= len(flags.gpu_devices.split(',')), 'The number of actor devices can not exceed the number of available devices'
 
     def update_model(ver, urls, force):
+        return  # debug
         global model_version, models
         if model_version != ver or force:
             if len(urls) > 0:
