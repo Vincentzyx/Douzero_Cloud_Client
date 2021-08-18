@@ -134,5 +134,6 @@ def download_obj(url):
 def download_pkl(url):
     try:
         return pickle.loads(download_obj(url))
-    except:
+    except Exception as e:
+        print("下载pkl文件失败:", repr(e))
         return None
