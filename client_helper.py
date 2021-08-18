@@ -23,11 +23,10 @@ def pack_item(item, mask=0b00000001):
     }
 
 def unpack_item(item, mask=0b00000001):
-    return bit_helper.unpackbits(torch.tensor(item["bits"], dtype=torch.int8, mask=mask), item["shape"])
+    return bit_helper.unpackbits(torch.tensor(item["bits"], dtype=torch.int8), item["shape"], mask=mask)
 
 
 def pack_batch(batch):
-    print(batch["obs_z"])
     data = {
         "done": pack_item(torch.tensor(batch["done"], dtype=torch.int8)),
         "episode_return": batch["episode_return"].tolist(),
@@ -61,8 +60,8 @@ def handle_batch(position, batch, model_version, program_version):
         ret = rep.json()
         if "server_speed" in ret:
             print("上传成功，服务器当前速度: %.1f fps" % ret["server_speed"])
-        if "model_version" in ret:
-            return ret["model_version"], ret["model_url"]
+            if "msg" in ret:
+                print(ret["msg"])
     except:
         print("Batch 传送失败")
         return model_version, ""
@@ -103,11 +102,11 @@ def handle_batches(batches, model_version, program_version):
         if rep is not None and rep.status_code == 200:
             try:
                 ret = rep.json()
-                if "info" in ret:
-                    print("传输错误: ", ret["info"])
                 print(ret)
                 if "server_speed" in ret:
                     print("上传成功，服务器当前速度: %.1f fps" % ret["server_speed"])
+                    if "msg" in ret:
+                        print(ret["msg"])
                 if "model_info" in ret:
                     return ret["model_info"]["version"], ret["model_info"]["urls"]
                 else:
