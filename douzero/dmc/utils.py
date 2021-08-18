@@ -103,14 +103,9 @@ def create_buffers(flags, device_iterator):
     return buffers
 
 def act(i, device, batch_queues, model, flags):
-    """
-    This function will run forever until we stop it. It will generate
-    data from the environment and send the data to buffer. It uses
-    a free queue and full queue to syncup with the main process.
-    """
     positions = ['landlord', 'landlord_up', 'landlord_down', 'bidding']
     for pos in positions:
-        model.models[pos].to(device)
+        model.models[pos].to(torch.device(device if device == "cpu" else ("cuda:"+str(device))))
     try:
         T = flags.unroll_length
         log.info('Device %s Actor %i started.', str(device), i)
