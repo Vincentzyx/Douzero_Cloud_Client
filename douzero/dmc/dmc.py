@@ -75,7 +75,6 @@ def train(flags):
         assert flags.num_actor_devices <= len(flags.gpu_devices.split(',')), 'The number of actor devices can not exceed the number of available devices'
 
     def update_model(ver, urls, force):
-        return  # debug
         global model_version, models
         if model_version != ver or force:
             if len(urls) > 0:
