@@ -35,6 +35,7 @@ def compute_loss(logits, targets):
 
 batches = []
 program_version = "2.0.2"
+updating = False
 
 def learn(position, actor_models, model, batch, optimizer, flags, lock):
     global model_version, models, batches
@@ -75,7 +76,10 @@ def train(flags):
         assert flags.num_actor_devices <= len(flags.gpu_devices.split(',')), 'The number of actor devices can not exceed the number of available devices'
 
     def update_model(ver, urls, force):
-        global model_version, models
+        global model_version, models, updating
+        if updating:
+            return
+        updating = True
         if model_version != ver or force:
             print("检测到模型更新")
             if len(urls) > 0:
@@ -101,6 +105,7 @@ def train(flags):
                 print("更新模型成功！耗时: %.1f s" % (time.time() - st))
             else:
                 print("更新模型失败！")
+        updating = False
 
     def load_actor_models():
         global model_version, models
