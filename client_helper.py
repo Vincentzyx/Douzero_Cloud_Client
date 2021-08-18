@@ -9,7 +9,7 @@ import hashlib
 import traceback
 import gzip
 debug = False
-google_cloud = False
+google_cloud = True
 HOST = "http://mc.vcccz.com:15000"
 if google_cloud:
     HOST = "http://cf.vcccz.com"
