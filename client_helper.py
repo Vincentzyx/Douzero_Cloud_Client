@@ -123,8 +123,8 @@ def get_model_info():
         rep = requests.get(HOST + "/model_info")
         info = rep.json()
         return info
-    except:
-        print("获取模型版本失败！")
+    except Exception as e:
+        print("获取模型版本失败:", repr(e))
         return None
 
 def download_obj(url):
