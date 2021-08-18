@@ -117,26 +117,26 @@ def train(flags):
             return
         if not (os.path.exists("./models/landlord.ckpt") and os.path.exists(
                 "./models/landlord_up.ckpt") and os.path.exists("./models/landlord_down.ckpt") and os.path.exists("./models/bidding.ckpt")):
-            update_model(model_info["version"], model_info["model_url"], True)
+            update_model(model_info["version"], model_info["urls"], True)
 
-    def check_update_model(force=False):
-        global model_version, models
-        if os.path.exists("./model_version.txt"):
-            with open("./model_version.txt", "r") as f:
-                model_version = int(f.read())
-        print("版本比对中")
-        model_info = client_helper.get_model_info()
-        if model_info is not None:
-            if model_info["program_version"] != program_version:
-                print("客户端版本不正确！请从Github重新拉取！")
-                return
-            print("服务器版本:", model_info["version"])
-            update_model(model_info["version"], model_info["url"], force)
-        else:
-            print("版本比对失败，更新模型失败")
-        if not (os.path.exists("./models/landlord.ckpt") and os.path.exists(
-                "./models/landlord_up.ckpt") and os.path.exists("./models/landlord_down.ckpt")):
-            update_model(model_info["version"], model_info["url"], True)
+    # def check_update_model(force=False):
+    #     global model_version, models
+    #     if os.path.exists("./model_version.txt"):
+    #         with open("./model_version.txt", "r") as f:
+    #             model_version = int(f.read())
+    #     print("版本比对中")
+    #     model_info = client_helper.get_model_info()
+    #     if model_info is not None:
+    #         if model_info["program_version"] != program_version:
+    #             print("客户端版本不正确！请从Github重新拉取！")
+    #             return
+    #         print("服务器版本:", model_info["version"])
+    #         update_model(model_info["version"], model_info["urls"], force)
+    #     else:
+    #         print("版本比对失败，更新模型失败")
+    #     if not (os.path.exists("./models/landlord.ckpt") and os.path.exists(
+    #             "./models/landlord_up.ckpt") and os.path.exists("./models/landlord_down.ckpt")):
+    #         update_model(model_info["version"], model_info["urls"], True)
 
     # Initialize actor models
     global models
@@ -206,6 +206,8 @@ def train(flags):
                 st = time.time()
                 if len(urls) > 0:
                     url = urls[random.randint(0, len(urls)-1)]
+                    print("Model urls:", urls)
+                    print("Model url:", url)
                     if ver != model_version and url != "":
                         print("新模型:", ver)
                         update_model(ver, url, True)
