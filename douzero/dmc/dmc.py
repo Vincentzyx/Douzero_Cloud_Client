@@ -77,15 +77,16 @@ def train(flags):
     def update_model(ver, urls, force):
         global model_version, models
         if model_version != ver or force:
+            print("检测到模型更新")
             if len(urls) > 0:
                 url = urls[random.randint(0, len(urls)-1)]
             else:
                 print("模型更新失败：没有有效的模型地址")
                 return
-            print("检测到模型更新，更新中，请耐心等待")
+            print("更新中，请耐心等待")
             st = time.time()
             weights = client_helper.download_pkl(url)
-            if weights != None:
+            if weights is not None:
                 model_version = ver
                 for position in ["landlord", "landlord_up", "landlord_down", "bidding"]:
                     if flags.actor_device_cpu:
@@ -106,13 +107,13 @@ def train(flags):
         if os.path.exists("./model_version.txt"):
             with open("./model_version.txt", "r") as f:
                 model_version = int(f.read())
-        print("版本比对中")
+        print("初始化，正在获取服务器版本")
         model_info = client_helper.get_model_info()
         if model_info is not None:
-            print("版本比对完成", model_info, model_info["version"])
+            print("版本获取完成，服务器版本:", model_info["version"])
             update_model(model_info["version"], model_info["urls"], False)
         else:
-            print("版本比对失败，更新模型失败")
+            print("服务器版本获取失败，更新模型失败")
             return
         if not (os.path.exists("./models/landlord.ckpt") and os.path.exists(
                 "./models/landlord_up.ckpt") and os.path.exists("./models/landlord_down.ckpt") and os.path.exists("./models/bidding.ckpt")):
@@ -173,7 +174,7 @@ def train(flags):
     global model_version
     # Load models if any
     if flags.load_model:
-        print("更新模型中，请稍后")
+        print("加载模型中，请稍后")
         load_actor_models()
     for position in ["landlord", "landlord_up", "landlord_down", 'bidding']:
         if flags.actor_device_cpu:
@@ -237,6 +238,9 @@ def train(flags):
             try:
                 info = client_helper.get_model_info()
                 if info is not None:
+                    if "program_version" in info:
+                        if info["program_version"] != program_version:
+                            print("客户端版本过时，请从Github重新拉取")
                     ver, url = info["version"], info["urls"]
                     update_model(ver, url, False)
                     env_ver = info["env_version"]
