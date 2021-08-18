@@ -1,4 +1,4 @@
-import os 
+import os
 import typing
 import logging
 import traceback
@@ -6,7 +6,7 @@ import numpy as np
 from collections import Counter
 import time
 
-import torch 
+import torch
 from torch import multiprocessing as mp
 
 from .env_utils import Environment
@@ -38,31 +38,27 @@ Buffers = typing.Dict[str, typing.List[torch.Tensor]]
 def create_env(flags):
     return Env(flags.objective)
 
-def get_batch(free_queue,
-              full_queue,
-              buffers,
-              flags,
-              lock):
+def get_batch(b_queues, position, flags, lock):
     """
     This function will sample a batch from the buffers based
     on the indices received from the full queue. It will also
     free the indices by sending it to full_queue.
     """
-    with lock:
-        indices = [full_queue.get() for _ in range(flags.batch_size)]
+    b_queue = b_queues[position]
+    buffer = []
+    while len(buffer) < flags.batch_size:
+        buffer.append(b_queue.get())
     batch = {
-        key: torch.stack([buffers[key][m] for m in indices], dim=1)
-        for key in buffers
+        key: torch.stack([m[key] for m in buffer], dim=1)
+        for key in ["done", "episode_return", "target", "obs_z", "obs_x_batch", "obs_type"]
     }
-    for m in indices:
-        free_queue.put(m)
     return batch
 
 def create_optimizers(flags, learner_model):
     """
     Create three optimizers for the three positions
     """
-    positions = ['landlord', 'landlord_up', 'landlord_down']
+    positions = ['landlord', 'landlord_up', 'landlord_down', 'bidding']
     optimizers = {}
     for position in positions:
         optimizer = torch.optim.RMSprop(
@@ -74,7 +70,7 @@ def create_optimizers(flags, learner_model):
         optimizers[position] = optimizer
     return optimizers
 
-def create_buffers(flags):
+def create_buffers(flags, device_iterator):
     """
     We create buffers for different positions as well as
     for different devices (i.e., GPU). That is, each device
@@ -82,121 +78,131 @@ def create_buffers(flags):
     """
     T = flags.unroll_length
     positions = ['landlord', 'landlord_up', 'landlord_down']
-    buffers = []
-    if not flags.actor_device_cpu:
-        for device in range(torch.cuda.device_count()):
-            buffers.append({})
-            for position in positions:
-                x_dim = 319 if position == 'landlord' else 430
-                specs = dict(
-                    done=dict(size=(T,), dtype=torch.bool),
-                    episode_return=dict(size=(T,), dtype=torch.float32),
-                    target=dict(size=(T,), dtype=torch.float32),
-                    obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
-                    obs_action=dict(size=(T, 54), dtype=torch.int8),
-                    obs_z=dict(size=(T, 5, 162), dtype=torch.int8),
-                )
-                _buffers: Buffers = {key: [] for key in specs}
-                for _ in range(flags.num_buffers):
-                    for key in _buffers:
+    buffers = {}
+    for device in device_iterator:
+        buffers[device] = {}
+        for position in positions:
+            x_dim = 465
+            specs = dict(
+                done=dict(size=(T,), dtype=torch.bool),
+                episode_return=dict(size=(T,), dtype=torch.float32),
+                target=dict(size=(T,), dtype=torch.float32),
+                obs_z=dict(size=(T, 32, 57), dtype=torch.int8),
+                obs_x_batch=dict(size=(T, x_dim+54), dtype=torch.int8),
+                obs_type=dict(size=(T,), dtype=torch.int8),
+            )
+            _buffers: Buffers = {key: [] for key in specs}
+            for _ in range(flags.num_buffers):
+                for key in _buffers:
+                    if not device == "cpu":
                         _buffer = torch.empty(**specs[key]).to(torch.device('cuda:'+str(device))).share_memory_()
-                        _buffers[key].append(_buffer)
-                buffers[device][position] = _buffers
-    else:
-        for device in range(1):
-            buffers.append({})
-            for position in positions:
-                x_dim = 319 if position == 'landlord' else 430
-                specs = dict(
-                    done=dict(size=(T,), dtype=torch.bool),
-                    episode_return=dict(size=(T,), dtype=torch.float32),
-                    target=dict(size=(T,), dtype=torch.float32),
-                    obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
-                    obs_action=dict(size=(T, 54), dtype=torch.int8),
-                    obs_z=dict(size=(T, 5, 162), dtype=torch.int8),
-                )
-                _buffers: Buffers = {key: [] for key in specs}
-                for _ in range(flags.num_buffers):
-                    for key in _buffers:
+                    else:
                         _buffer = torch.empty(**specs[key]).to(torch.device('cpu')).share_memory_()
-                        _buffers[key].append(_buffer)
-                buffers[device][position] = _buffers
+                    _buffers[key].append(_buffer)
+            buffers[device][position] = _buffers
     return buffers
 
-def act(i, device, free_queue, full_queue, model, buffers, flags):
+def act(i, device, batch_queues, model, flags):
     """
     This function will run forever until we stop it. It will generate
     data from the environment and send the data to buffer. It uses
     a free queue and full queue to syncup with the main process.
     """
-    positions = ['landlord', 'landlord_up', 'landlord_down']
+    positions = ['landlord', 'landlord_up', 'landlord_down', 'bidding']
+    for pos in positions:
+        model.models[pos].to(device)
     try:
         T = flags.unroll_length
-        log.info('Device %i Actor %i started.', device, i)
+        log.info('Device %s Actor %i started.', str(device), i)
 
         env = create_env(flags)
-
-        if flags.actor_device_cpu:
-            device = "cpu"
         env = Environment(env, device)
 
         done_buf = {p: [] for p in positions}
         episode_return_buf = {p: [] for p in positions}
         target_buf = {p: [] for p in positions}
-        obs_x_no_action_buf = {p: [] for p in positions}
-        obs_action_buf = {p: [] for p in positions}
         obs_z_buf = {p: [] for p in positions}
         size = {p: 0 for p in positions}
+        type_buf = {p: [] for p in positions}
+        obs_x_batch_buf = {p: [] for p in positions}
 
-        position, obs, env_output = env.initial()
+        position_index = {"landlord": 31, "landlord_up": 32, "landlord_down": 33}
+        bid_type_index = {"landlord": 41, "landlord_up": 42, "landlord_down": 43}
+        bid_type_map = {41: "landlord", 42: "landlord_up", 43: "landlord_down"}
 
+        position, obs, env_output = env.initial(model, device)
+        bid_obs_buffer = env_output["begin_buf"]["bid_obs_buffer"]
+        multiply_obs_buffer = env_output["begin_buf"]["multiply_obs_buffer"]
         while True:
+            # print("posi", position)
+            for bid_obs in bid_obs_buffer:
+                obs_z_buf["bidding"].append(bid_obs['z_batch'])
+                obs_x_batch_buf["bidding"].append(bid_obs["x_batch"])
+                type_buf["bidding"].append(bid_type_index[bid_obs["position"]])
+                size["bidding"] += 1
+            for mul_obs in multiply_obs_buffer:
+                obs_z_buf[mul_obs["position"]].append(mul_obs['z_batch'])
+                obs_x_batch_buf[mul_obs["position"]].append(mul_obs["x_batch"])
+                type_buf[mul_obs["position"]].append(2)
+                size[mul_obs["position"]] += 1
             while True:
-                obs_x_no_action_buf[position].append(env_output['obs_x_no_action'])
                 obs_z_buf[position].append(env_output['obs_z'])
                 with torch.no_grad():
                     agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
                 _action_idx = int(agent_output['action'].cpu().detach().numpy())
                 action = obs['legal_actions'][_action_idx]
-                obs_action_buf[position].append(_cards2tensor(action))
-                position, obs, env_output = env.step(action)
+                x_batch = torch.cat((env_output['obs_x_no_action'], _cards2tensor(action)), dim=0).float()
+                obs_x_batch_buf[position].append(x_batch)
+                type_buf[position].append(position_index[position])
+                position, obs, env_output = env.step(action, model, device)
                 size[position] += 1
                 if env_output['done']:
+                    bid_obs_buffer = env_output["begin_buf"]["bid_obs_buffer"]
+                    multiply_obs_buffer = env_output["begin_buf"]["multiply_obs_buffer"]
                     for p in positions:
                         diff = size[p] - len(target_buf[p])
+                        # print(p, diff)
                         if diff > 0:
                             done_buf[p].extend([False for _ in range(diff-1)])
                             done_buf[p].append(True)
-
-                            episode_return = env_output['episode_return'] if p == 'landlord' else -env_output['episode_return']
-                            episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
-                            episode_return_buf[p].append(episode_return)
-                            target_buf[p].extend([episode_return for _ in range(diff)])
+                            if p != "bidding":
+                                episode_return = env_output['episode_return'][p] if p == 'landlord' else -env_output['episode_return'][p]
+                                episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
+                                episode_return_buf[p].append(episode_return)
+                                # print(p, episode_return)
+                                target_buf[p].extend([episode_return for _ in range(diff)])
+                            else:
+                                offset = len(target_buf[p])
+                                for index in range(diff):
+                                    pos = type_buf[p][index+offset]
+                                    if pos == 41:
+                                        episode_return = env_output['episode_return']["landlord"]
+                                    else:
+                                        episode_return = -env_output['episode_return'][bid_type_map[pos]]
+                                    episode_return_buf[p].append(episode_return)
+                                    # print(p, episode_return)
+                                    target_buf[p].append(episode_return)
                     break
-
             for p in positions:
                 if size[p] > T:
-                    index = free_queue[p].get()
-                    if index is None:
-                        break
-                    for t in range(T):
-                        buffers[p]['done'][index][t, ...] = done_buf[p][t]
-                        buffers[p]['episode_return'][index][t, ...] = episode_return_buf[p][t]
-                        buffers[p]['target'][index][t, ...] = target_buf[p][t]
-                        buffers[p]['obs_x_no_action'][index][t, ...] = obs_x_no_action_buf[p][t]
-                        buffers[p]['obs_action'][index][t, ...] = obs_action_buf[p][t]
-                        buffers[p]['obs_z'][index][t, ...] = obs_z_buf[p][t]
-                    full_queue[p].put(index)
+                    # print(p, "epr", torch.stack([torch.tensor(ndarr, device="cpu") for ndarr in episode_return_buf[p][:T]]),)
+                    batch_queues[p].put({
+                        "done": torch.stack([torch.tensor(ndarr, device="cpu") for ndarr in done_buf[p][:T]]),
+                        "episode_return": torch.stack([torch.tensor(ndarr, device="cpu") for ndarr in episode_return_buf[p][:T]]),
+                        "target": torch.stack([torch.tensor(ndarr, device="cpu") for ndarr in target_buf[p][:T]]),
+                        "obs_z": torch.stack([torch.tensor(ndarr, device="cpu") for ndarr in obs_z_buf[p][:T]]),
+                        "obs_x_batch": torch.stack([torch.tensor(ndarr, device="cpu") for ndarr in obs_x_batch_buf[p][:T]]),
+                        "obs_type": torch.stack([torch.tensor(ndarr, device="cpu") for ndarr in type_buf[p][:T]])
+                    })
                     done_buf[p] = done_buf[p][T:]
                     episode_return_buf[p] = episode_return_buf[p][T:]
                     target_buf[p] = target_buf[p][T:]
-                    obs_x_no_action_buf[p] = obs_x_no_action_buf[p][T:]
-                    obs_action_buf[p] = obs_action_buf[p][T:]
+                    obs_x_batch_buf[p] = obs_x_batch_buf[p][T:]
                     obs_z_buf[p] = obs_z_buf[p][T:]
+                    type_buf[p] = type_buf[p][T:]
                     size[p] -= T
-
     except KeyboardInterrupt:
-        pass  
+        pass
     except Exception as e:
         log.error('Exception in worker process %i', i)
         traceback.print_exc()

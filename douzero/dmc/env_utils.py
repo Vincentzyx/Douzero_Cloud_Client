@@ -4,7 +4,7 @@ to use. When a game is finished, instead of mannualy reseting
 the environment, we do it automatically.
 """
 import numpy as np
-import torch 
+import torch
 
 def _format_observation(obs, device):
     """
@@ -33,38 +33,56 @@ class Environment:
         self.device = device
         self.episode_return = None
 
-    def initial(self):
-        initial_position, initial_obs, x_no_action, z = _format_observation(self.env.reset(), self.device)
+    def initial(self, model, device):
+        obs, buf = self.env.reset(model, device)
+        initial_position, initial_obs, x_no_action, z = _format_observation(obs, self.device)
         initial_reward = torch.zeros(1, 1)
         self.episode_return = torch.zeros(1, 1)
         initial_done = torch.ones(1, 1, dtype=torch.bool)
-
-        return initial_position, initial_obs, dict(
-            done=initial_done,
-            episode_return=self.episode_return,
-            obs_x_no_action=x_no_action,
-            obs_z=z,
+        if buf is None:
+            return initial_position, initial_obs, dict(
+                done=initial_done,
+                episode_return=self.episode_return,
+                obs_x_no_action=x_no_action,
+                obs_z=z,
             )
-        
-    def step(self, action):
+        else:
+            return initial_position, initial_obs, dict(
+                done=initial_done,
+                episode_return=self.episode_return,
+                obs_x_no_action=x_no_action,
+                obs_z=z,
+                begin_buf=buf
+            )
+
+    def step(self, action, model, device):
         obs, reward, done, _ = self.env.step(action)
 
-        self.episode_return += reward
-        episode_return = self.episode_return 
-
+        self.episode_return = reward
+        episode_return = self.episode_return
+        buf = None
         if done:
-            obs = self.env.reset()
+            obs, buf = self.env.reset(model, device)
             self.episode_return = torch.zeros(1, 1)
 
         position, obs, x_no_action, z = _format_observation(obs, self.device)
-        reward = torch.tensor(reward).view(1, 1)
+        # reward = torch.tensor(reward).view(1, 1)
         done = torch.tensor(done).view(1, 1)
-        
-        return position, obs, dict(
-            done=done,
-            episode_return=episode_return,
-            obs_x_no_action=x_no_action,
-            obs_z=z,
+
+        if buf is None:
+            return position, obs, dict(
+                done=done,
+                episode_return=episode_return,
+                obs_x_no_action=x_no_action,
+                obs_z=z,
+            )
+        else:
+            return position, obs, dict(
+                done=done,
+                episode_return=episode_return,
+                obs_x_no_action=x_no_action,
+                obs_z=z,
+                begin_buf=buf
             )
 
     def close(self):
