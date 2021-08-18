@@ -86,6 +86,7 @@ def train(flags):
                 url = urls[random.randint(0, len(urls)-1)]
             else:
                 print("模型更新失败：没有有效的模型地址")
+                updating = False
                 return
             print("更新中，请耐心等待")
             st = time.time()
