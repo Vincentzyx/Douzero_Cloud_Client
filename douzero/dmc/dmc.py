@@ -312,7 +312,7 @@ def train(flags):
             start_frames = frames
             position_start_frames = {k: position_frames[k] for k in position_frames}
             start_time = timer()
-            time.sleep(5)
+            time.sleep(10)
 
             if timer() - last_checkpoint_time > flags.save_interval * 60:
                 checkpoint(frames)
