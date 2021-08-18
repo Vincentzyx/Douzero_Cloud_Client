@@ -67,7 +67,7 @@ def train(flags):
 
     T = flags.unroll_length
     B = flags.batch_size
-
+    print(flags.actor_device_cpu)
     if flags.actor_device_cpu:
         device_iterator = ['cpu']
     else:
