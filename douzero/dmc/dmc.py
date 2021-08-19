@@ -246,13 +246,13 @@ def train(flags):
                     if "program_version" in info:
                         if info["program_version"] != program_version:
                             print("客户端版本过时，请从Github重新拉取")
-                    ver, urls = info["version"], info["urls"]
-                    update_model(ver, urls, False)
+                    # ver, urls = info["version"], info["urls"]
+                    # update_model(ver, urls, False)
                     env_ver = info["env_version"]
                     update_env(env_ver, info["env_url"])
             except Exception as e:
                 print("在检查模型更新时出现错误: ", repr(e))
-            time.sleep(60)
+            time.sleep(300)
 
 
 
