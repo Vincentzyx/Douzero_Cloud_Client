@@ -15,7 +15,7 @@ import random
 
 from .file_writer import FileWriter
 from .models import Model
-from .utils import get_batch, log, create_env, create_buffers, create_optimizers, act
+from .utils import get_batch, log, create_env, create_optimizers, act
 import client_helper
 import bit_helper
 import requests
