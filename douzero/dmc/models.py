@@ -259,7 +259,7 @@ class Model:
         self.models['landlord'].eval()
         self.models['landlord_up'].eval()
         self.models['landlord_down'].eval()
-        self.models['bidding'].eval()
+        # self.models['bidding'].eval()
 
     def parameters(self, position):
         return self.models[position].parameters()

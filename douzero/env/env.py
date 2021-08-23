@@ -5,8 +5,8 @@ import torch
 
 from douzero.env.game import GameEnv
 
-env_version = "3.0"
-env_url = ""
+env_version = "3.1"
+env_url = "http://od.vcccz.com/hechuan/env.py"
 Card2Column = {3: 0, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7,
                11: 8, 12: 9, 13: 10, 14: 11, 17: 12}
 
@@ -114,8 +114,9 @@ class Env:
                 bid_count = 0
                 for r in range(3):
                     bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
-                    action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
-                                           torch.tensor(bidding_obs["x_batch"], device=device))
+                    with torch.no_grad():
+                        action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
+                                               torch.tensor(bidding_obs["x_batch"], device=device))
                     # action = {"action": 1} if random.random() < 0.4 else {"action": 0}
                     if bid_limit <= 0:
                         action = {"action": 1}  # debug
@@ -146,8 +147,9 @@ class Env:
                     r = 3
                     bidding_player = first_bid
                     bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
-                    action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
-                                           torch.tensor(bidding_obs["x_batch"], device=device))
+                    with torch.no_grad():
+                        action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
+                                               torch.tensor(bidding_obs["x_batch"], device=device))
                     bid_obs_buffer.append({
                         "x_batch": bidding_obs["x_batch"][action["action"]],
                         "z_batch": bidding_obs["z_batch"][action["action"]],
