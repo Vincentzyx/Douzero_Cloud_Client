@@ -264,7 +264,7 @@ class Env:
             elif self.objective == 'logadp':
                 return -bomb_num - 1.0 - self._env.bid_count - self._env.multiply_count[pos]
             else:
-                return -1.0 - self._env.step_count * 0.0033
+                return -1.0 + self._env.step_count * 0.0033
 
     @property
     def _game_infoset(self):
