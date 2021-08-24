@@ -2,6 +2,7 @@ from collections import Counter
 import numpy as np
 import random
 import torch
+import BidModel
 
 from douzero.env.game import GameEnv
 
@@ -112,6 +113,8 @@ class Env:
                 first_bid = -1
                 last_bid = -1
                 bid_count = 0
+                if bid_limit <= 0:
+                    self.force_bid += 1
                 for r in range(3):
                     bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
                     with torch.no_grad():
@@ -119,9 +122,11 @@ class Env:
                                                torch.tensor(bidding_obs["x_batch"], device=device))
                     # action = {"action": 1} if random.random() < 0.4 else {"action": 0}
                     if bid_limit <= 0:
-                        action = {"action": 1}  # debug
-                        bid_limit += 1
-                        self.force_bid += 1
+                        wr = BidModel.predict_env(card_play_data[bidding_player])
+                        if wr >= 0.7:
+                            action = {"action": 1}  # debug
+                            bid_limit += 1
+
                     bid_obs_buffer.append({
                         "x_batch": bidding_obs["x_batch"][action["action"]],
                         "z_batch": bidding_obs["z_batch"][action["action"]],
