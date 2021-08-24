@@ -89,6 +89,7 @@ class Env:
             bid_obs_buffer = []
             multiply_obs_buffer = []
             bid_limit = 3
+            force_bid = False
             while not bid_done:
                 bid_limit -= 1
                 bid_obs_buffer.clear()
@@ -114,7 +115,7 @@ class Env:
                 last_bid = -1
                 bid_count = 0
                 if bid_limit <= 0:
-                    self.force_bid += 1
+                    force_bid = True
                 for r in range(3):
                     bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
                     with torch.no_grad():
@@ -213,6 +214,8 @@ class Env:
                 self._env.info_sets[pos].multiply_info = multiply_map[action["action"]]
                 self._env.multiply_count[pos] = action["action"]
             self.infoset = self._game_infoset
+            if force_bid:
+                self.force_bid += 1
             if self.total_round % 100 == 0:
                 print("发牌情况: %i/%i %.1f%%" % (self.force_bid, self.total_round, self.force_bid / self.total_round * 100))
                 self.force_bid = 0
