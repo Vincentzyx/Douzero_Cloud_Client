@@ -33,8 +33,8 @@ class Environment:
         self.device = device
         self.episode_return = None
 
-    def initial(self, model, device):
-        obs, buf = self.env.reset(model, device)
+    def initial(self, model, device, flags=None):
+        obs, buf = self.env.reset(model, device, flags=flags)
         initial_position, initial_obs, x_no_action, z = _format_observation(obs, self.device)
         initial_reward = torch.zeros(1, 1)
         self.episode_return = torch.zeros(1, 1)
@@ -55,14 +55,14 @@ class Environment:
                 begin_buf=buf
             )
 
-    def step(self, action, model, device):
+    def step(self, action, model, device, flags=None):
         obs, reward, done, _ = self.env.step(action)
 
         self.episode_return = reward
         episode_return = self.episode_return
         buf = None
         if done:
-            obs, buf = self.env.reset(model, device)
+            obs, buf = self.env.reset(model, device, flags=flags)
             self.episode_return = torch.zeros(1, 1)
 
         position, obs, x_no_action, z = _format_observation(obs, self.device)

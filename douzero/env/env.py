@@ -55,7 +55,7 @@ class Env:
         self.force_bid = 0
         self.infoset = None
 
-    def reset(self, model, device):
+    def reset(self, model, device, flags=None):
         """
         Every time reset is called, the environment
         will be re-initialized with a new deck of cards.
@@ -120,7 +120,7 @@ class Env:
                     bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
                     with torch.no_grad():
                         action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
-                                               torch.tensor(bidding_obs["x_batch"], device=device))
+                                               torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
                     if bid_limit <= 0:
                         wr = BidModel.predict_env(card_play_data[bidding_player])
                         if wr >= 0.7:
@@ -154,7 +154,7 @@ class Env:
                     bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
                     with torch.no_grad():
                         action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
-                                               torch.tensor(bidding_obs["x_batch"], device=device))
+                                               torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
                     bid_obs_buffer.append({
                         "x_batch": bidding_obs["x_batch"][action["action"]],
                         "z_batch": bidding_obs["z_batch"][action["action"]],
@@ -204,7 +204,7 @@ class Env:
                 multiply_obs = _get_obs_for_multiply(pos, self._env.info_sets[pos].bid_info, card_play_data[pos],
                                                      landlord_cards)
                 action = model.forward(pos, torch.tensor(multiply_obs["z_batch"], device=device),
-                                       torch.tensor(multiply_obs["x_batch"], device=device))
+                                       torch.tensor(multiply_obs["x_batch"], device=device), flags=flags)
                 multiply_obs_buffer.append({
                     "x_batch": multiply_obs["x_batch"][action["action"]],
                     "z_batch": multiply_obs["z_batch"][action["action"]],

@@ -95,7 +95,7 @@ def act(i, device, batch_queues, model, flags):
         bid_type_index = {"landlord": 41, "landlord_up": 42, "landlord_down": 43}
         bid_type_map = {41: "landlord", 42: "landlord_up", 43: "landlord_down"}
 
-        position, obs, env_output = env.initial(model, device)
+        position, obs, env_output = env.initial(model, device, flags=flags)
         bid_obs_buffer = env_output["begin_buf"]["bid_obs_buffer"]
         multiply_obs_buffer = env_output["begin_buf"]["multiply_obs_buffer"]
         while True:
@@ -119,7 +119,7 @@ def act(i, device, batch_queues, model, flags):
                 x_batch = torch.cat((env_output['obs_x_no_action'], _cards2tensor(action)), dim=0).float()
                 obs_x_batch_buf[position].append(x_batch)
                 type_buf[position].append(position_index[position])
-                position, obs, env_output = env.step(action, model, device)
+                position, obs, env_output = env.step(action, model, device, flags=flags)
                 size[position] += 1
                 if env_output['done']:
                     bid_obs_buffer = env_output["begin_buf"]["bid_obs_buffer"]
