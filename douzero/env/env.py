@@ -241,9 +241,16 @@ class Env:
         if self._game_over:
             done = True
             reward = {
-                "landlord": self._get_reward("landlord")*2,
-                "landlord_up": self._get_reward("landlord_up"),
-                "landlord_down": self._get_reward("landlord_down")
+                "play": {
+                    "landlord": self._get_reward("landlord")*2,
+                    "landlord_up": self._get_reward("landlord_up"),
+                    "landlord_down": self._get_reward("landlord_down")
+                },
+                "bid": {
+                    "landlord": self._get_reward_bidding("landlord")*2,
+                    "landlord_up": self._get_reward_bidding("landlord_up"),
+                    "landlord_down": self._get_reward_bidding("landlord_down")
+                }
             }
             obs = None
         else:
@@ -272,6 +279,19 @@ class Env:
                 return -bomb_num - 1.0 - self._env.bid_count - self._env.multiply_count[pos]
             else:
                 return -1.0 + self._env.step_count * 0.0033
+
+    def _get_reward_bidding(self, pos):
+        """
+        This function is called in the end of each
+        game. It returns either 1/-1 for win/loss,
+        or ADP, i.e., every bomb will double the score.
+        """
+        winner = self._game_winner
+        bomb_num = self._game_bomb_num
+        if winner == 'landlord':
+            return 1.0 * 2**(self._env.bid_count-1) / 8
+        else:
+            return -1.0 * 2**(self._env.bid_count-1) / 8
 
     @property
     def _game_infoset(self):

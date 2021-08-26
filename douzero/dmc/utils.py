@@ -131,7 +131,7 @@ def act(i, device, batch_queues, model, flags):
                             done_buf[p].extend([False for _ in range(diff-1)])
                             done_buf[p].append(True)
                             if p != "bidding":
-                                episode_return = env_output['episode_return'][p] if p == 'landlord' else -env_output['episode_return'][p]
+                                episode_return = env_output['episode_return']["play"][p] if p == 'landlord' else -env_output['episode_return']["play"][p]
                                 episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
                                 episode_return_buf[p].append(episode_return)
                                 # print(p, episode_return)
@@ -141,9 +141,9 @@ def act(i, device, batch_queues, model, flags):
                                 for index in range(diff):
                                     pos = type_buf[p][index+offset]
                                     if pos == 41:
-                                        episode_return = env_output['episode_return']["landlord"]
+                                        episode_return = env_output['episode_return']["bid"]["landlord"]
                                     else:
-                                        episode_return = -env_output['episode_return'][bid_type_map[pos]]
+                                        episode_return = -env_output['episode_return']["bid"][bid_type_map[pos]]
                                     episode_return_buf[p].append(episode_return)
                                     # print(p, episode_return)
                                     target_buf[p].append(episode_return)
