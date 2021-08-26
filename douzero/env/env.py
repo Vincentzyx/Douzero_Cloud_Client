@@ -242,7 +242,7 @@ class Env:
             done = True
             reward = {
                 "play": {
-                    "landlord": self._get_reward("landlord")*2,
+                    "landlord": self._get_reward("landlord"),
                     "landlord_up": self._get_reward("landlord_up"),
                     "landlord_down": self._get_reward("landlord_down")
                 },
@@ -265,18 +265,19 @@ class Env:
         """
         winner = self._game_winner
         bomb_num = self._game_bomb_num
+        self_bomb_num = self._env.pos_bomb_num[pos]
         if winner == 'landlord':
             if self.objective == 'adp':
                 return (1.0 - self._env.step_count * 0.0033) * (bomb_num + self._env.bid_count) * 2**self._env.multiply_count[pos]
             elif self.objective == 'logadp':
-                return bomb_num + 1.0 + self._env.bid_count + self._env.multiply_count[pos]
+                return (1.0 - self._env.step_count * 0.0033) * 1.3**self_bomb_num * 2**self._env.multiply_count[pos] / 4
             else:
                 return 1.0 - self._env.step_count * 0.0033
         else:
             if self.objective == 'adp':
                 return (-1.0 - self._env.step_count * 0.0033) * (bomb_num + self._env.bid_count) * 2**self._env.multiply_count[pos]
             elif self.objective == 'logadp':
-                return -bomb_num - 1.0 - self._env.bid_count - self._env.multiply_count[pos]
+                return (-1.0 + self._env.step_count * 0.0033) * 1.3**self_bomb_num * 2**self._env.multiply_count[pos] / 4
             else:
                 return -1.0 + self._env.step_count * 0.0033
 

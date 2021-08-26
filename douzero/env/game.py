@@ -52,6 +52,11 @@ class GameEnv(object):
                           'landlord_down': InfoSet('landlord_down')}
 
         self.bomb_num = 0
+        self.pos_bomb_num = {
+            "landlord": 0,
+            "landlord_up": 0,
+            "landlord_down": 0
+        }
         self.last_pid = 'landlord'
 
         self.bid_info = [[-1, -1, -1],
@@ -122,6 +127,7 @@ class GameEnv(object):
 
         if action in bombs:
             self.bomb_num += 1
+            self.pos_bomb_num[self.acting_player_position] += 1
 
         self.last_move_dict[
             self.acting_player_position] = action.copy()
@@ -300,6 +306,11 @@ class GameEnv(object):
                           'landlord_down': InfoSet('landlord_down')}
 
         self.bomb_num = 0
+        self.pos_bomb_num = {
+            "landlord": 0,
+            "landlord_up": 0,
+            "landlord_down": 0
+        }
         self.last_pid = 'landlord'
         self.bid_info = [[-1, -1, -1],
                          [-1, -1, -1],

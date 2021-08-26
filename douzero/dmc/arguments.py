@@ -7,8 +7,8 @@ parser.add_argument('--xpid', default='douzero',
                     help='Experiment id (default: douzero)')
 parser.add_argument('--save_interval', default=30, type=int,
                     help='Time interval (in minutes) at which to save the model')    
-parser.add_argument('--objective', default='wp', type=str, choices=['adp', 'wp', 'logadp'],
-                    help='Use ADP or WP as reward (default: ADP)')    
+parser.add_argument('--objective', default='logadp', type=str, choices=['adp', 'wp', 'logadp'],
+                    help='Use ADP, LogADP or WP as reward (default: ADP)')
 
 # Training settings
 parser.add_argument('--actor_device_cpu', default=1, type=int,
