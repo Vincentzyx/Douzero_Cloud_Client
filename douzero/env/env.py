@@ -201,15 +201,16 @@ class Env:
                 self._env.info_sets[pos].player_id = pid
                 self._env.info_sets[pos].bid_info = bid_info[:, [(pid - 1) % 3, pid, (pid + 1) % 3]]
                 self._env.bid_count = bid_count
-                multiply_obs = _get_obs_for_multiply(pos, self._env.info_sets[pos].bid_info, card_play_data[pos],
-                                                     landlord_cards)
-                action = model.forward(pos, torch.tensor(multiply_obs["z_batch"], device=device),
-                                       torch.tensor(multiply_obs["x_batch"], device=device), flags=flags)
-                multiply_obs_buffer.append({
-                    "x_batch": multiply_obs["x_batch"][action["action"]],
-                    "z_batch": multiply_obs["z_batch"][action["action"]],
-                    "position": pos
-                })
+                # multiply_obs = _get_obs_for_multiply(pos, self._env.info_sets[pos].bid_info, card_play_data[pos],
+                #                                      landlord_cards)
+                # action = model.forward(pos, torch.tensor(multiply_obs["z_batch"], device=device),
+                #                        torch.tensor(multiply_obs["x_batch"], device=device), flags=flags)
+                # multiply_obs_buffer.append({
+                #     "x_batch": multiply_obs["x_batch"][action["action"]],
+                #     "z_batch": multiply_obs["z_batch"][action["action"]],
+                #     "position": pos
+                # })
+                action = {"action":0}
                 self._env.info_sets[pos].multiply_info = multiply_map[action["action"]]
                 self._env.multiply_count[pos] = action["action"]
             self.infoset = self._game_infoset
