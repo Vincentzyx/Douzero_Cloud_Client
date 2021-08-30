@@ -270,14 +270,14 @@ class Env:
             if self.objective == 'adp':
                 return (1.0 - self._env.step_count * 0.0033) * (bomb_num + self._env.bid_count) * 2**self._env.multiply_count[pos]
             elif self.objective == 'logadp':
-                return (1.0 - self._env.step_count * 0.0033) * 1.3**self_bomb_num * 2**self._env.multiply_count[pos] / 4
+                return (1.0 - self._env.step_count * 0.0033) * 1.3**bomb_num
             else:
                 return 1.0 - self._env.step_count * 0.0033
         else:
             if self.objective == 'adp':
                 return (-1.0 - self._env.step_count * 0.0033) * (bomb_num + self._env.bid_count) * 2**self._env.multiply_count[pos]
             elif self.objective == 'logadp':
-                return (-1.0 + self._env.step_count * 0.0033) * 1.3**self_bomb_num * 2**self._env.multiply_count[pos] / 4
+                return (-1.0 + self._env.step_count * 0.0033) * 1.3**bomb_num
             else:
                 return -1.0 + self._env.step_count * 0.0033
 

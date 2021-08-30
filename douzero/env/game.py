@@ -64,9 +64,9 @@ class GameEnv(object):
                          [-1, -1, -1],
                          [-1, -1, -1]]
         self.bid_count = 0
-        self.multiply_count = {'landlord': 1,
-                               'landlord_up': 1,
-                               'landlord_down': 1}
+        self.multiply_count = {'landlord': 0,
+                               'landlord_up': 0,
+                               'landlord_down': 0}
         self.step_count = 0
 
 
