@@ -331,7 +331,7 @@ def train(flags):
             fps = (frames - start_frames) / (end_time - start_time)
             fps_avg = 0
             fps_log.append(fps)
-            if len(fps_log) > 24:
+            if len(fps_log) > 30:
                 fps_log = fps_log[1:]
             for fps_record in fps_log:
                 fps_avg += fps_record
