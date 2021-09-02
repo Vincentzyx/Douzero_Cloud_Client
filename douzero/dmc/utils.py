@@ -111,12 +111,14 @@ def act(i, device, batch_queues, model, flags):
                 type_buf[mul_obs["position"]].append(2)
                 size[mul_obs["position"]] += 1
             while True:
-                obs_z_buf[position].append(env_output['obs_z'])
+
                 with torch.no_grad():
                     agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
                 _action_idx = int(agent_output['action'].cpu().detach().numpy())
                 action = obs['legal_actions'][_action_idx]
-                x_batch = torch.cat((env_output['obs_x_no_action'], _cards2tensor(action)), dim=0).float()
+                obs_z_buf[position].append(torch.vstack((_cards2tensor(action).unsqueeze(0), env_output['obs_z'])).float())
+                # x_batch = torch.cat((env_output['obs_x_no_action'], _cards2tensor(action)), dim=0).float()
+                x_batch = env_output['obs_x_no_action'].float()
                 obs_x_batch_buf[position].append(x_batch)
                 type_buf[position].append(position_index[position])
                 position, obs, env_output = env.step(action, model, device, flags=flags)
@@ -134,7 +136,6 @@ def act(i, device, batch_queues, model, flags):
                                 episode_return = env_output['episode_return']["play"][p] if p == 'landlord' else -env_output['episode_return']["play"][p]
                                 episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
                                 episode_return_buf[p].append(episode_return)
-                                # print(p, episode_return)
                                 target_buf[p].extend([episode_return for _ in range(diff)])
                             else:
                                 offset = len(target_buf[p])
@@ -166,6 +167,7 @@ def act(i, device, batch_queues, model, flags):
                     obs_z_buf[p] = obs_z_buf[p][T:]
                     type_buf[p] = type_buf[p][T:]
                     size[p] -= T
+
     except KeyboardInterrupt:
         pass
     except Exception as e:
