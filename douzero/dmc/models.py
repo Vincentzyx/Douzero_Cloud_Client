@@ -313,15 +313,15 @@ class BidModel(nn.Module):
 
     def forward(self, z, x, return_value=False, flags=None, debug=False):
         x = self.dense1(x)
-        x = torch.relu(x)
+        x = F.leaky_relu(x)
         x = self.dense2(x)
-        x = torch.relu(x)
+        x = F.leaky_relu(x)
         x = self.dense3(x)
-        x = torch.relu(x)
+        x = F.leaky_relu(x)
         x = self.dense4(x)
-        x = torch.relu(x)
+        x = F.leaky_relu(x)
         x = self.dense5(x)
-        x = torch.relu(x)
+        x = F.leaky_relu(x)
         x = self.dense6(x)
         if return_value:
             return dict(values=x)
