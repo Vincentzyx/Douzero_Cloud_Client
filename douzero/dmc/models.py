@@ -276,6 +276,15 @@ class GeneralModel(nn.Module):
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
 
+    def softmax(self, x):
+        x_row_max = x.max(axis=-1)
+        x_row_max = x_row_max.reshape(list(x.shape)[:-1]+[1])
+        x = x - x_row_max
+        x_exp = np.exp(x)
+        x_exp_row_sum = x_exp.sum(axis=-1).reshape(list(x.shape)[:-1]+[1])
+        softmax = x_exp / x_exp_row_sum
+        return softmax
+
     def forward(self, z, x, return_value=False, flags=None, debug=False):
         out = F.relu(self.bn1(self.conv1(z)))
         out = self.layer1(out)
@@ -291,7 +300,8 @@ class GeneralModel(nn.Module):
             return dict(values=out)
         else:
             if flags is not None and flags.exp_epsilon > 0 and np.random.rand() < flags.exp_epsilon:
-                action = torch.randint(out.shape[0], (1,))[0]
+                # action = torch.randint(out.shape[0], (1,))[0]
+                action = np.random.choice(out.shape[0], p=self.softmax(100*out.squeeze(-1).cpu().numpy()))
             else:
                 action = torch.argmax(out,dim=0)[0]
             return dict(action=action, max_value=torch.max(out))

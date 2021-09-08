@@ -114,7 +114,7 @@ def act(i, device, batch_queues, model, flags):
 
                 with torch.no_grad():
                     agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
-                _action_idx = int(agent_output['action'].cpu().detach().numpy())
+                _action_idx = int(agent_output['action'])
                 action = obs['legal_actions'][_action_idx]
                 obs_z_buf[position].append(torch.vstack((_cards2tensor(action).unsqueeze(0), env_output['obs_z'])).float())
                 # x_batch = torch.cat((env_output['obs_x_no_action'], _cards2tensor(action)), dim=0).float()
