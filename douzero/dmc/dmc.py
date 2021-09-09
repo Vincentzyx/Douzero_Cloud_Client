@@ -204,21 +204,24 @@ def train(flags):
     def upload_batch_loop(flags):
         global model_version, models
         while True:
-            if len(batches) > 0:
-                my_batches = []
-                my_batches.extend(batches)
-                batches.clear()
-                ver, urls = client_helper.handle_batches(my_batches, model_version, program_version)
-                st = time.time()
-                if len(urls) > 0:
-                    if ver != model_version:
-                        print("新模型:", ver)
-                        update_model(ver, urls, True)
-                        print("更新完成！耗时: %.1f s" % (time.time() - st))
+            try:
+                if len(batches) > 0:
+                    my_batches = []
+                    my_batches.extend(batches)
+                    batches.clear()
+                    ver, urls = client_helper.handle_batches(my_batches, model_version, program_version)
+                    st = time.time()
+                    if len(urls) > 0:
+                        if ver != model_version:
+                            print("新模型:", ver)
+                            update_model(ver, urls, True)
+                            print("更新完成！耗时: %.1f s" % (time.time() - st))
+                    else:
+                        print("没有收到模型下载地址")
                 else:
-                    print("没有收到模型下载地址")
-            else:
-                print("没有新Batch")
+                    print("没有新Batch")
+            except Exception as e:
+                print("在处理Batch时出现错误:", repr(e))
             time.sleep(15)
 
     def update_env(env_ver, url, force=False):
