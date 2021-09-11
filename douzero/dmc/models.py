@@ -308,38 +308,44 @@ class GeneralModel(nn.Module):
 
 
 
-
-
 class BidModel(nn.Module):
     def __init__(self):
         super().__init__()
-
-        self.dense1 = nn.Linear(114, 512)
-        self.dense2 = nn.Linear(512, 512)
-        self.dense3 = nn.Linear(512, 512)
-        self.dense4 = nn.Linear(512, 512)
-        self.dense5 = nn.Linear(512, 512)
-        self.dense6 = nn.Linear(512, 1)
+        # input: 1 * 114
+        self.conv1 = nn.Conv1d(1, 32, kernel_size=(3,)) # 32 * 112
+        # pooling 32 * 56
+        self.conv2 = nn.Conv1d(32, 64, kernel_size=(3,)) # 64 * 54
+        # pooling 64 * 27
+        self.conv3 = nn.Conv1d(64, 128, kernel_size=(3,)) # 128 * 25
+        # pooling 128 * 12
+        self.dense1 = nn.Linear(1536, 512)
+        self.dense2 = nn.Linear(512, 256)
+        self.dense3 = nn.Linear(256, 128)
+        self.dense4 = nn.Linear(128, 1)
 
     def forward(self, z, x, return_value=False, flags=None, debug=False):
-        x = self.dense1(x)
-        x = F.leaky_relu(x)
-        x = self.dense2(x)
-        x = F.leaky_relu(x)
-        x = self.dense3(x)
-        x = F.leaky_relu(x)
-        x = self.dense4(x)
-        x = F.leaky_relu(x)
-        x = self.dense5(x)
-        x = F.leaky_relu(x)
-        x = self.dense6(x)
+        x = x.unsqueeze(1)
+        x = F.leaky_relu(self.conv1(x))
+        x = torch.max_pool1d(x, 2)
+        x = F.leaky_relu(self.conv2(x))
+        x = torch.max_pool1d(x, 2)
+        x = F.leaky_relu(self.conv3(x))
+        x = torch.max_pool1d(x, 2)
+        x = x.flatten(1, 2)
+        x = F.leaky_relu(self.dense1(x))
+        x = F.leaky_relu(self.dense2(x))
+        x = F.leaky_relu(self.dense3(x))
+        x = torch.sigmoid(self.dense4(x))
         if return_value:
             return dict(values=x)
         else:
-            if flags is not None and flags.exp_epsilon > 0 and np.random.rand() < flags.exp_epsilon * 10:
-                action = torch.randint(x.shape[0], (1,))[0]
+            if flags is not None and flags.exp_epsilon > 0 and np.random.rand() < flags.exp_epsilon:
+                # action = torch.randint(x.shape[-1], (1,))[0]
+                prob = x.cpu().item()
+                action = np.random.choice(2, p=[1-prob, prob])
             else:
-                action = torch.argmax(x,dim=0)[0]
+                prob = x.cpu().item()
+                action = np.random.choice(2, p=[1-prob, prob])
             return dict(action=action, max_value=torch.max(x))
 
 

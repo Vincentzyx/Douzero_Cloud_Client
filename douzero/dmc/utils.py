@@ -89,6 +89,7 @@ def act(i, device, batch_queues, model, flags):
         obs_z_buf = {p: [] for p in positions}
         size = {p: 0 for p in positions}
         type_buf = {p: [] for p in positions}
+        pos_buf = {p: [] for p in positions}
         obs_x_batch_buf = {p: [] for p in positions}
 
         position_index = {"landlord": 31, "landlord_up": 32, "landlord_down": 33}
@@ -103,7 +104,8 @@ def act(i, device, batch_queues, model, flags):
             for bid_obs in bid_obs_buffer:
                 obs_z_buf["bidding"].append(bid_obs['z_batch'])
                 obs_x_batch_buf["bidding"].append(bid_obs["x_batch"])
-                type_buf["bidding"].append(bid_type_index[bid_obs["position"]])
+                type_buf["bidding"].append(bid_obs["action"])
+                pos_buf["bidding"].append(bid_obs["position"])
                 size["bidding"] += 1
             for mul_obs in multiply_obs_buffer:
                 obs_z_buf[mul_obs["position"]].append(mul_obs['z_batch'])
@@ -114,7 +116,7 @@ def act(i, device, batch_queues, model, flags):
 
                 with torch.no_grad():
                     agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
-                _action_idx = int(agent_output['action'])
+                _action_idx = agent_output['action']
                 action = obs['legal_actions'][_action_idx]
                 obs_z_buf[position].append(torch.vstack((_cards2tensor(action).unsqueeze(0), env_output['obs_z'])).float())
                 # x_batch = torch.cat((env_output['obs_x_no_action'], _cards2tensor(action)), dim=0).float()
@@ -140,11 +142,11 @@ def act(i, device, batch_queues, model, flags):
                             else:
                                 offset = len(target_buf[p])
                                 for index in range(diff):
-                                    pos = type_buf[p][index+offset]
-                                    if pos == 41:
+                                    pos = pos_buf[p][index+offset]
+                                    if pos == "landlord":
                                         episode_return = env_output['episode_return']["bid"]["landlord"]
                                     else:
-                                        episode_return = -env_output['episode_return']["bid"][bid_type_map[pos]]
+                                        episode_return = -env_output['episode_return']["bid"][pos]
                                     episode_return_buf[p].append(episode_return)
                                     # print(p, episode_return)
                                     target_buf[p].append(episode_return)
@@ -166,6 +168,7 @@ def act(i, device, batch_queues, model, flags):
                     obs_x_batch_buf[p] = obs_x_batch_buf[p][T:]
                     obs_z_buf[p] = obs_z_buf[p][T:]
                     type_buf[p] = type_buf[p][T:]
+                    pos_buf[p] = pos_buf[p][T:]
                     size[p] -= T
 
     except KeyboardInterrupt:

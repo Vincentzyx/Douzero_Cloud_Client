@@ -6,7 +6,7 @@ import BidModel
 
 from douzero.env.game import GameEnv
 
-env_version = "3.0.2"
+env_version = "3.1.0"
 env_url = "http://od.vcccz.com/hechuan/env.py"
 Card2Column = {3: 0, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7,
                11: 8, 12: 9, 13: 10, 14: 11, 17: 12}
@@ -128,8 +128,9 @@ class Env:
                             bid_limit += 1
 
                     bid_obs_buffer.append({
-                        "x_batch": bidding_obs["x_batch"][action["action"]],
-                        "z_batch": bidding_obs["z_batch"][action["action"]],
+                        "x_batch": bidding_obs["x_batch"][0],
+                        "z_batch": bidding_obs["z_batch"][0],
+                        "action": action["action"],
                         "pid": bidding_player
                     })
                     if action["action"] == 1:
@@ -156,8 +157,9 @@ class Env:
                         action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
                                                torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
                     bid_obs_buffer.append({
-                        "x_batch": bidding_obs["x_batch"][action["action"]],
-                        "z_batch": bidding_obs["z_batch"][action["action"]],
+                        "x_batch": bidding_obs["x_batch"][0],
+                        "z_batch": bidding_obs["z_batch"][0],
+                        "action": action["action"],
                         "pid": bidding_player
                     })
                     if action["action"] == 1:
@@ -291,9 +293,9 @@ class Env:
         winner = self._game_winner
         bomb_num = self._game_bomb_num
         if winner == 'landlord':
-            return 1.0 * 2**(self._env.bid_count-1) / 8
+            return 1.0 * 2**(self._env.bid_count-1) * 1.3 ** bomb_num / 8
         else:
-            return -1.0 * 2**(self._env.bid_count-1) / 8
+            return -1.0 * 2**(self._env.bid_count-1) * 1.3 ** bomb_num / 8
 
     @property
     def _game_infoset(self):
@@ -1154,6 +1156,9 @@ def gen_bid_legal_actions(player_id, bid_info):
     return np.array(bid_actions)
 
 
+def get_self_bidding_state(player_id, bid_info):
+    return bid_info[:, [(player_id - 1) % 3, player_id, (player_id + 1) % 3]]
+
 def _get_obs_for_bid_legacy(player_id, bid_info, hand_cards):
     all_cards = [3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7,
                  8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12,
@@ -1276,15 +1281,13 @@ def _get_obs_for_bid(player_id, bid_info, hand_cards):
     all_cards = [3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7,
                  8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12,
                  12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 17, 17, 17, 17, 20, 30]
-    num_legal_actions = 2
+    num_legal_actions = 1
     my_handcards = _cards2array(hand_cards)
-    my_handcards_batch = np.repeat(my_handcards[np.newaxis, :],
-                                   num_legal_actions, axis=0)
-
-    bid_legal_actions = gen_bid_legal_actions(player_id, bid_info)
-    bid_info = bid_legal_actions[0]
+    my_handcards_batch = my_handcards[np.newaxis, :]
+    bid_legal_actions = get_self_bidding_state(player_id, bid_info)
+    bid_legal_actions = bid_legal_actions.flatten()
+    bid_legal_actions = bid_legal_actions[np.newaxis, :]
     bid_info_batch = np.hstack([bid_legal_actions for _ in range(5)])
-
     x_batch = np.hstack((my_handcards_batch,
                          bid_info_batch))
     x_no_action = np.hstack((my_handcards))
