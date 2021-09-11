@@ -6,7 +6,7 @@ import BidModel
 
 from douzero.env.game import GameEnv
 
-env_version = "3.0.1"
+env_version = "3.0.2"
 env_url = "http://od.vcccz.com/hechuan/env.py"
 Card2Column = {3: 0, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7,
                11: 8, 12: 9, 13: 10, 14: 11, 17: 12}
@@ -269,14 +269,14 @@ class Env:
         self_bomb_num = self._env.pos_bomb_num[pos]
         if winner == 'landlord':
             if self.objective == 'adp':
-                return (1.1 - self._env.step_count * 0.0033) * 1.3 ** (bomb_num +self._env.multiply_count[pos]) / 8
+                return (1.0 * 1.3 ** (bomb_num + self._env.multiply_count[pos]) - self._env.step_count * 0.001) / 8
             elif self.objective == 'logadp':
                 return (1.0 - self._env.step_count * 0.0033) * 1.3**self_bomb_num * 2**self._env.multiply_count[pos] / 4
             else:
                 return 1.0 - self._env.step_count * 0.0033
         else:
             if self.objective == 'adp':
-                return (-1.1 + self._env.step_count * 0.0033) * 1.3 ** (bomb_num +self._env.multiply_count[pos]) / 8
+                return (-1.0 * 1.3 ** (bomb_num + self._env.multiply_count[pos]) + self._env.step_count * 0.001) / 8
             elif self.objective == 'logadp':
                 return (-1.0 + self._env.step_count * 0.0033) * 1.3**self_bomb_num * 2**self._env.multiply_count[pos] / 4
             else:
