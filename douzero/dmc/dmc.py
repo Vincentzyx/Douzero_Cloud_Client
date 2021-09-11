@@ -249,6 +249,10 @@ def train(flags):
                     if "program_version" in info:
                         if info["program_version"] != program_version:
                             print("客户端版本过时，请从Github重新拉取")
+                            print("重启客户端")
+                            os.execl(sys.executable, sys.executable, *sys.argv)
+                            time.sleep(1)
+                            exit()
                     # ver, urls = info["version"], info["urls"]
                     # update_model(ver, urls, False)
                     env_ver = info["env_version"]
