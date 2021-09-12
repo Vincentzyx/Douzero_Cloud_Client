@@ -209,7 +209,7 @@ def train(flags):
                     my_batches = []
                     my_batches.extend(batches)
                     batches.clear()
-                    ver, urls = client_helper.handle_batches(my_batches, model_version, program_version)
+                    ver, urls = client_helper.handle_batches(my_batches, model_version, program_version, flags)
                     st = time.time()
                     if len(urls) > 0:
                         if ver != model_version:

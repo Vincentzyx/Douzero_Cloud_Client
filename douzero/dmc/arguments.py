@@ -9,6 +9,10 @@ parser.add_argument('--save_interval', default=30, type=int,
                     help='Time interval (in minutes) at which to save the model')    
 parser.add_argument('--objective', default='adp', type=str, choices=['adp', 'wp', 'logadp'],
                     help='Use ADP, LogADP or WP as reward (default: ADP)')
+parser.add_argument('--username', default='default', type=str,
+                    help='Your username')
+parser.add_argument('--password', default='0', type=str,
+                    help='Your password')
 
 # Training settings
 parser.add_argument('--actor_device_cpu', default=1, type=int,

@@ -320,8 +320,8 @@ class BidModel(nn.Module):
         # pooling 128 * 12
         self.dense1 = nn.Linear(1536, 512)
         self.dense2 = nn.Linear(512, 256)
-        self.dense3 = nn.Linear(256, 128)
-        self.dense4 = nn.Linear(128, 1)
+        self.dense3 = nn.Linear(256, 256)
+        self.dense4 = nn.Linear(256, 2)
 
     def forward(self, z, x, return_value=False, flags=None, debug=False):
         x = x.unsqueeze(1)
@@ -335,21 +335,21 @@ class BidModel(nn.Module):
         x = F.leaky_relu(self.dense1(x))
         x = F.leaky_relu(self.dense2(x))
         x = F.leaky_relu(self.dense3(x))
-        x = torch.sigmoid(self.dense4(x))
+        x = torch.softmax(self.dense4(x), -1)
         if return_value:
             return dict(values=x)
         else:
-            if torch.isnan(x) or x == 0:
+            if torch.isnan(x):
                 action = np.random.choice(2, p=[0.5, 0.5])
                 print("Bid模型出现NAN", x)
                 return dict(action=action, max_value=torch.max(x))
             if flags is not None and flags.exp_epsilon > 0 and np.random.rand() < flags.exp_epsilon:
                 # action = torch.randint(x.shape[-1], (1,))[0]
-                prob = x.cpu().item()
-                action = np.random.choice(2, p=[1-prob, prob])
+                prob = x.squeeze(0).cpu().numpy()
+                action = np.random.choice(2, p=[prob[0], 1-prob[0]])
             else:
-                prob = x.cpu().item()
-                action = np.random.choice(2, p=[1-prob, prob])
+                prob = x.squeeze(0).cpu().numpy()
+                action = np.random.choice(2, p=[prob[0], 1-prob[0]])
             return dict(action=action, max_value=torch.max(x))
 
 
