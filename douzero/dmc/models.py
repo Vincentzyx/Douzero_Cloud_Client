@@ -339,16 +339,17 @@ class BidModel(nn.Module):
         if return_value:
             return dict(values=x)
         else:
-            if torch.isnan(x):
+            x = x.squeeze(0)
+            if torch.isnan(x[0]) or torch.isnan(x[1]):
                 action = np.random.choice(2, p=[0.5, 0.5])
                 print("Bid模型出现NAN", x)
                 return dict(action=action, max_value=torch.max(x))
             if flags is not None and flags.exp_epsilon > 0 and np.random.rand() < flags.exp_epsilon:
                 # action = torch.randint(x.shape[-1], (1,))[0]
-                prob = x.squeeze(0).cpu().numpy()
+                prob = x.cpu().numpy()
                 action = np.random.choice(2, p=[prob[0], 1-prob[0]])
             else:
-                prob = x.squeeze(0).cpu().numpy()
+                prob = x.cpu().numpy()
                 action = np.random.choice(2, p=[prob[0], 1-prob[0]])
             return dict(action=action, max_value=torch.max(x))
 
