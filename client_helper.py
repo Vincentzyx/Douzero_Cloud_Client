@@ -66,7 +66,7 @@ def handle_batch(position, batch, model_version, program_version):
         print("Batch 传送失败")
         return model_version, ""
 
-def handle_batches(batches, model_version, program_version):
+def handle_batches(batches, model_version, program_version, flags):
     data = []
 
     for batch in batches:
@@ -77,7 +77,8 @@ def handle_batches(batches, model_version, program_version):
     info = {
         "batches": data,
         "model_version": model_version,
-        "program_version": program_version
+        "program_version": program_version,
+        "username": flags.username
     }
     # print(batches)
     data = pickle.dumps(info)
