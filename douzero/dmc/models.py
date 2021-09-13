@@ -346,8 +346,8 @@ class BidModel(nn.Module):
                 return dict(action=action, max_value=torch.max(x))
             if flags is not None and flags.exp_epsilon > 0 and np.random.rand() < flags.exp_epsilon:
                 # action = torch.randint(x.shape[-1], (1,))[0]
-                prob = x.cpu().numpy()
-                action = np.random.choice(2, p=[prob[0], 1-prob[0]])
+                # prob = x.cpu().numpy()
+                action = np.random.choice(2, p=[0.5, 0.5])
             else:
                 prob = x.cpu().numpy()
                 action = np.random.choice(2, p=[prob[0], 1-prob[0]])
