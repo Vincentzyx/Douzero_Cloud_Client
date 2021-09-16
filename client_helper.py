@@ -88,7 +88,7 @@ def handle_batches(batches, model_version, program_version, flags):
     print("准备发送Batch")
     try:
         try:
-            rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream', 'Content-Encoding': 'gzip','Accept-encoding': 'gzip'}, timeout=60)
+            rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream', 'Content-Encoding': 'gzip','Accept-encoding': 'gzip'}, timeout=90)
         except TimeoutError:
             rep = None
             print("传输超时")
@@ -96,7 +96,7 @@ def handle_batches(batches, model_version, program_version, flags):
             tryCount -= 1
             print("传输失败，重试中")
             try:
-                rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream', 'Content-Encoding': 'gzip','Accept-encoding': 'gzip'}, timeout=60)
+                rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream', 'Content-Encoding': 'gzip','Accept-encoding': 'gzip'}, timeout=90)
             except TimeoutError:
                 rep = None
                 print("传输超时")
