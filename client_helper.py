@@ -3,6 +3,7 @@ import torch
 import bit_helper
 import pickle
 import requests
+from requests import ReadTimeout
 import time
 import json
 import hashlib
@@ -89,7 +90,10 @@ def handle_batches(batches, model_version, program_version, flags):
     try:
         try:
             rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream', 'Content-Encoding': 'gzip','Accept-encoding': 'gzip'}, timeout=120)
-        except TimeoutError:
+        except TimeoutError as e:
+            rep = None
+            print("传输超时")
+        except ReadTimeout as e:
             rep = None
             print("传输超时")
         while (rep is None or rep.status_code != 200) and tryCount > 0:
@@ -98,6 +102,9 @@ def handle_batches(batches, model_version, program_version, flags):
             try:
                 rep = requests.post(HOST + "/upload_batch", data, headers={'Content-Type': 'application/octet-stream', 'Content-Encoding': 'gzip','Accept-encoding': 'gzip'}, timeout=120)
             except TimeoutError:
+                rep = None
+                print("传输超时")
+            except ReadTimeout as e:
                 rep = None
                 print("传输超时")
         if rep is not None and rep.status_code == 200:
