@@ -142,7 +142,7 @@ def act(i, device, batch_queues, model, flags):
                 action = obs['legal_actions'][_action_idx]
                 # 对于能直接出完的情况做特判
                 infoset = env_output["infoset"]
-                score = 0
+                score = agent_output["action_list"][_action_idx]
                 if len(action) != len(infoset.player_hand_cards):
                     for l_action in obs['legal_actions']:
                         if len(l_action) == len(infoset.player_hand_cards):
@@ -157,7 +157,7 @@ def act(i, device, batch_queues, model, flags):
                         rival_move = last_two_moves[0]
                     elif last_two_moves[1]:
                         rival_move = last_two_moves[1]
-                    if score != 10000:
+                    if score != 10000 and score > 0.2:
                         path_list = []
                         search_actions(infoset.player_hand_cards, infoset.other_hand_cards,
                                        path_list, rival_move=rival_move)
