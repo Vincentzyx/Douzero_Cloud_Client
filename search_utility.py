@@ -77,9 +77,12 @@ def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves
             else:
                 if rival_move is not None:
                     move_info = get_move_type(move)
-                    if move_info["rank"] <= rival_move_info["rank"]:
+                    if "rank" in move_info and "rank" in rival_move_info and move_info["rank"] <= rival_move_info[
+                        "rank"]:
                         continue
                     if "len" in move_info and move_info["len"] != rival_move_info["len"]:
+                        continue
+                    if rival_move_info["type"] == 5:
                         continue
                 legal_move_tree.append(move)
                 if prev_moves is not None:
