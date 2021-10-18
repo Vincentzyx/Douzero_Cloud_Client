@@ -11,6 +11,8 @@ from torch import multiprocessing as mp
 
 from .env_utils import Environment
 from douzero.env import Env
+import douzero.env.move_detector as md
+from search_utility import search_actions, select_optimal_path, check_42
 
 Card2Column = {3: 0, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7,
                11: 8, 12: 9, 13: 10, 14: 11, 17: 12}
@@ -72,6 +74,25 @@ def create_optimizers(flags, learner_model):
     return optimizers
 
 
+EnvCard2RealCard = {3: '3', 4: '4', 5: '5', 6: '6', 7: '7',
+                    8: '8', 9: '9', 10: 'T', 11: 'J', 12: 'Q',
+                    13: 'K', 14: 'A', 17: '2', 20: 'X', 30: 'D'}
+
+
+def action_to_str(action):
+    if len(action) == 0:
+        return "Pass"
+    else:
+        return "".join([EnvCard2RealCard[card] for card in action])
+
+
+def path_to_str(path):
+    pstr = ""
+    for action in path:
+        pstr += action_to_str(action) + " "
+    return pstr
+
+
 def act(i, device, batch_queues, model, flags):
     positions = ['landlord', 'landlord_up', 'landlord_down', 'bidding']
     for pos in positions:
@@ -89,6 +110,7 @@ def act(i, device, batch_queues, model, flags):
         obs_z_buf = {p: [] for p in positions}
         size = {p: 0 for p in positions}
         type_buf = {p: [] for p in positions}
+        info_buf = {p: [] for p in positions}
         pos_buf = {p: [] for p in positions}
         obs_x_batch_buf = {p: [] for p in positions}
 
@@ -118,8 +140,36 @@ def act(i, device, batch_queues, model, flags):
                     agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
                 _action_idx = agent_output['action']
                 action = obs['legal_actions'][_action_idx]
+                # 对于能直接出完的情况做特判
+                infoset = env_output["infoset"]
+                score = 0
+                if len(action) != len(infoset.player_hand_cards):
+                    for l_action in obs['legal_actions']:
+                        if len(l_action) == len(infoset.player_hand_cards):
+                            m_type = md.get_move_type(l_action)
+                            if m_type["type"] not in [md.TYPE_14_4_22, md.TYPE_13_4_2]:
+                                print("检测到可直接出完出法:", action_to_str(action), "->", action_to_str(l_action))
+                                action = l_action
+                                score = 10000
+                    last_two_moves = infoset.last_two_moves
+                    rival_move = None
+                    if last_two_moves[0]:
+                        rival_move = last_two_moves[0]
+                    elif last_two_moves[1]:
+                        rival_move = last_two_moves[1]
+                    if score != 10000:
+                        path_list = []
+                        search_actions(infoset.player_hand_cards, infoset.other_hand_cards,
+                                       path_list, rival_move=rival_move)
+                        if len(path_list) > 0:
+                            path = select_optimal_path(path_list)
+                            if not check_42(path):
+                                if action != path[0]:
+                                    print("检测到可直接出完路径:", action_to_str(action), "->", path_to_str(path))
+                                    action = path[0]
+                                    score = 20000
+                # --------------------------
                 obs_z_buf[position].append(torch.vstack((_cards2tensor(action).unsqueeze(0), env_output['obs_z'])).float())
-                # x_batch = torch.cat((env_output['obs_x_no_action'], _cards2tensor(action)), dim=0).float()
                 x_batch = env_output['obs_x_no_action'].float()
                 obs_x_batch_buf[position].append(x_batch)
                 type_buf[position].append(position_index[position])

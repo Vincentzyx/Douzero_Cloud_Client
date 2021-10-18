@@ -76,7 +76,8 @@ class Env:
                 card_play_data[key].sort()
             self._env.card_play_init(card_play_data)
             self.infoset = self._game_infoset
-            return get_obs(self.infoset)
+            return get_obs(self.infoset), self.infoset
+        # Bidding stage
         else:
             self.total_round += 1
             bid_done = False
@@ -228,7 +229,7 @@ class Env:
             return get_obs(self.infoset), {
                 "bid_obs_buffer": bid_obs_buffer,
                 "multiply_obs_buffer": multiply_obs_buffer
-            }
+            }, self.infoset
 
     def step(self, action):
         """
@@ -261,7 +262,7 @@ class Env:
             obs = None
         else:
             obs = get_obs(self.infoset)
-        return obs, reward, done, {}
+        return obs, reward, done, self.infoset
 
     def _get_reward(self, pos):
         """

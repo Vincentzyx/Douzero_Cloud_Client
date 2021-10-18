@@ -301,11 +301,10 @@ class GeneralModel(nn.Module):
         else:
             if flags is not None and flags.exp_epsilon > 0 and np.random.rand() < flags.exp_epsilon:
                 # action = torch.randint(out.shape[0], (1,))[0]
-                action = np.random.choice(out.shape[0], p=self.softmax(100*out.squeeze(-1).cpu().numpy()))
+                action = np.random.choice(out.shape[0], p=self.softmax(20*out.squeeze(-1).cpu().numpy()))
             else:
                 action = torch.argmax(out,dim=0)[0]
-            return dict(action=action, max_value=torch.max(out))
-
+            return dict(action=action, max_value=torch.max(out), action_list=out.squeeze(-1).cpu().tolist())
 
 
 class BidModel(nn.Module):

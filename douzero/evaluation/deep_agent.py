@@ -3,9 +3,13 @@ import numpy as np
 
 from douzero.env.env import get_obs
 
-def _load_model(position, model_path):
-    from douzero.dmc.models import model_dict
-    model = model_dict[position]()
+def _load_model(position, model_path, model_type):
+    from douzero.dmc.models import model_dict_new, model_dict
+    model = None
+    if model_type == "general":
+        model = model_dict_new[position]()
+    else:
+        model = model_dict[position]()
     model_state_dict = model.state_dict()
     if torch.cuda.is_available():
         pretrained = torch.load(model_path, map_location='cuda:0')
@@ -14,6 +18,7 @@ def _load_model(position, model_path):
     pretrained = {k: v for k, v in pretrained.items() if k in model_state_dict}
     model_state_dict.update(pretrained)
     model.load_state_dict(model_state_dict)
+    # torch.save(model.state_dict(), model_path.replace(".ckpt", "_nobn.ckpt"))
     if torch.cuda.is_available():
         model.cuda()
     model.eval()
@@ -22,13 +27,16 @@ def _load_model(position, model_path):
 class DeepAgent:
 
     def __init__(self, position, model_path):
-        self.model = _load_model(position, model_path)
-
+        self.model_type = "general" if "resnet" in model_path else "old"
+        self.model = _load_model(position, model_path, self.model_type)
+        self.EnvCard2RealCard = {3: '3', 4: '4', 5: '5', 6: '6', 7: '7',
+                            8: '8', 9: '9', 10: 'T', 11: 'J', 12: 'Q',
+                            13: 'K', 14: 'A', 17: '2', 20: 'X', 30: 'D'}
     def act(self, infoset):
         if len(infoset.legal_actions) == 1:
             return infoset.legal_actions[0]
 
-        obs = get_obs(infoset) 
+        obs = get_obs(infoset, self.model_type == "general")
 
         z_batch = torch.from_numpy(obs['z_batch']).float()
         x_batch = torch.from_numpy(obs['x_batch']).float()
@@ -39,5 +47,4 @@ class DeepAgent:
 
         best_action_index = np.argmax(y_pred, axis=0)[0]
         best_action = infoset.legal_actions[best_action_index]
-
         return best_action
