@@ -84,6 +84,8 @@ def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves
                     else:
                         new_prev = [move]
                     actions = search_actions(new_cards, other_cards, path_list, prev_moves=new_prev)
+                    del new_prev
+                    del new_cards
                     if actions is not None and len(actions) > 0:
                         legal_move_tree.append([move, actions])
             else:
