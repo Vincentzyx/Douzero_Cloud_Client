@@ -105,6 +105,7 @@ def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves
                 else:
                     path_list.append([move])
     legal_moves_count = len(legal_move_tree)
+    del my_gener, other_gener, my_bombs, other_bombs, my_cards, other_cards
     if legal_moves_count == 0:
         return None
     if legal_moves_count == 1:
