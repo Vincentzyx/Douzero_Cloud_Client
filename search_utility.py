@@ -109,7 +109,10 @@ def eval_path(path):
 
 def select_optimal_path(path_list):
     if len(path_list) != 0:
-        return max(path_list, key=lambda x: eval_path(x))
+        max_path = max(path_list, key=lambda x: eval_path(x))
+        for action in max_path:
+            action.sort()
+        return max_path
     else:
         return None
 
