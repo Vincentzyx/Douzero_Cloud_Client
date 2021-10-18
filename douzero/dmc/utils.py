@@ -157,7 +157,7 @@ def act(i, device, batch_queues, model, flags):
                         rival_move = last_two_moves[0]
                     elif last_two_moves[1]:
                         rival_move = last_two_moves[1]
-                    if score != 10000 and score > 0.2:
+                    if score != 10000 and score > 0.02:
                         path_list = []
                         search_actions(infoset.player_hand_cards, infoset.other_hand_cards,
                                        path_list, rival_move=rival_move)
