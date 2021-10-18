@@ -26,26 +26,23 @@ def type_exist(mlist, type):
 
 
 def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves=None):
-    if prev_moves is None:
-        my_cards.sort()
-        other_cards.sort()
     my_gener = MovesGener(my_cards)
     other_gener = MovesGener(other_cards)
     other_bombs = other_gener.gen_type_4_bomb()
     other_bombs.extend(other_gener.gen_type_5_king_bomb())
+    my_bombs = my_gener.gen_type_4_bomb()
+    my_bombs.extend(my_gener.gen_type_5_king_bomb())
     legal_move_tree = []
     rival_move_info = {}
-    m_type_start = 1
-    m_type_end = 15
+    type_range = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ,14]
     if rival_move is not None:
         if len(rival_move) > 0:
             rival_move_info = get_move_type(rival_move)
-            m_type_start = rival_move_info["type"]
-            m_type_end = m_type_start + 1
+            type_range = [rival_move_info["type"], 4, 5]
         else:
             rival_move = None
 
-    for mtype in range(m_type_start, m_type_end):
+    for mtype in type_range:
         my_moves = my_gener.gen_moves_by_type(mtype)
         if len(my_moves) == 0:
             continue
@@ -60,9 +57,11 @@ def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves
                 if len(move_selector.filter_type_n(mtype, other_moves, move)) == 0:
                     if rival_move is not None:
                         move_info = get_move_type(move)
-                        if move_info["rank"] <= rival_move_info["rank"]:
+                        if "rank" in move_info and "rank" in rival_move_info and move_info["rank"] <= rival_move_info["rank"]:
                             continue
                         if "len" in move_info and move_info["len"] != rival_move_info["len"]:
+                            continue
+                        if rival_move_info["type"] == 5:
                             continue
                     new_cards = my_cards.copy()
                     for card in move:
@@ -107,10 +106,7 @@ def eval_path(path):
 
 def select_optimal_path(path_list):
     if len(path_list) != 0:
-        max_path = max(path_list, key=lambda x: eval_path(x))
-        for action in max_path:
-            action.sort()
-        return max_path
+        return max(path_list, key=lambda x: eval_path(x))
     else:
         return None
 
@@ -124,13 +120,16 @@ def check_42(path):
 
 
 if __name__ == "__main__":
-    my_cards = [3, 3, 4, 5, 5, 6, 6, 6, 7, 8, 8, 10, 10, 14, 17, 17]
+    my_cards = [3, 12, 12, 20, 30]
     other_cards = [11, 4]
     st = time.time()
     paths = []
-    result = search_actions(my_cards, other_cards, paths, rival_move=[11, 11])
+    result = search_actions(my_cards, other_cards, paths, rival_move=[11])
     print(time.time()-st)
-    print(result)
-    print(paths)
+    # print(result)
+    # print(paths)
+    for path in paths:
+        print(path)
     path = select_optimal_path(paths)
     print(path)
+    print(move_selector.filter_type_4_bomb([[8,8,8]], [5,5,5,5]))
