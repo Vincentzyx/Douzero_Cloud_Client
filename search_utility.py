@@ -25,7 +25,19 @@ def type_exist(mlist, type):
     return True
 
 
+def action_in_tree(path_list, action):
+    for ac in path_list:
+        ac[0].sort()
+        if action == ac[0]:
+            return ac
+    return None
+
+
+
 def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves=None):
+    if prev_moves is None:
+        my_cards.sort()
+        other_cards.sort()
     my_gener = MovesGener(my_cards)
     other_gener = MovesGener(other_cards)
     other_bombs = other_gener.gen_type_4_bomb()
@@ -73,12 +85,11 @@ def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves
                         new_prev = [move]
                     actions = search_actions(new_cards, other_cards, path_list, prev_moves=new_prev)
                     if actions is not None and len(actions) > 0:
-                        legal_move_tree.append([move, [actions]])
+                        legal_move_tree.append([move, actions])
             else:
                 if rival_move is not None:
                     move_info = get_move_type(move)
-                    if "rank" in move_info and "rank" in rival_move_info and move_info["rank"] <= rival_move_info[
-                        "rank"]:
+                    if "rank" in move_info and "rank" in rival_move_info and move_info["rank"] <= rival_move_info["rank"]:
                         continue
                     if "len" in move_info and move_info["len"] != rival_move_info["len"]:
                         continue
@@ -126,16 +137,16 @@ def check_42(path):
 
 
 if __name__ == "__main__":
-    my_cards = [3, 12, 12, 20, 30]
+    my_cards =[5,5,5,13,12]
     other_cards = [11, 4]
     st = time.time()
     paths = []
-    result = search_actions(my_cards, other_cards, paths, rival_move=[11])
+    result = search_actions(my_cards, other_cards, paths)
     print(time.time()-st)
-    # print(result)
+    print(result)
     # print(paths)
     for path in paths:
         print(path)
     path = select_optimal_path(paths)
-    print(path)
-    print(move_selector.filter_type_4_bomb([[8,8,8]], [5,5,5,5]))
+    print("optimal", path)
+    print(action_in_tree(result, [5,5,5,12]))

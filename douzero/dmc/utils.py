@@ -12,7 +12,7 @@ from torch import multiprocessing as mp
 from .env_utils import Environment
 from douzero.env import Env
 import douzero.env.move_detector as md
-from search_utility import search_actions, select_optimal_path, check_42
+from search_utility import search_actions, select_optimal_path, check_42, action_in_tree
 
 Card2Column = {3: 0, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7,
                11: 8, 12: 9, 13: 10, 14: 11, 17: 12}
@@ -162,12 +162,17 @@ def act(i, device, batch_queues, model, flags):
                         search_actions(infoset.player_hand_cards, infoset.other_hand_cards,
                                        path_list, rival_move=rival_move)
                         if len(path_list) > 0:
-                            path = select_optimal_path(path_list)
-                            if not check_42(path):
-                                if action != path[0]:
-                                    print("检测到可直接出完路径:", action_to_str(action), "->", path_to_str(path))
-                                    action = path[0]
-                                    score = 20000
+                            one_path = action_in_tree(path_list, action)
+                            if one_path is not None:
+                                # print("检测到可直接出完路径", len(path_list),"条", path_to_str(one_path), "，AI决策正确")
+                                pass
+                            else:
+                                path = select_optimal_path(path_list)
+                                if not check_42(path):
+                                    if action != path[0]:
+                                        print("检测到可直接出完路径:", action_to_str(action), "->", path_to_str(path))
+                                        action = path[0]
+                                        score = 20000
                 # --------------------------
                 obs_z_buf[position].append(torch.vstack((_cards2tensor(action).unsqueeze(0), env_output['obs_z'])).float())
                 x_batch = env_output['obs_x_no_action'].float()
