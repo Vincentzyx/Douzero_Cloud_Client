@@ -35,7 +35,7 @@ def action_in_tree(path_list, action):
 
 
 def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves=None):
-    if len(path_list) > 100:
+    if len(path_list) > 200:
         return None
     if prev_moves is None:
         my_cards.sort()
