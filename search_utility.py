@@ -48,7 +48,7 @@ def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves
     my_bombs.extend(my_gener.gen_type_5_king_bomb())
     legal_move_tree = []
     rival_move_info = {}
-    type_range = [4, 5, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    type_range = [4, 5, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
     if rival_move is not None:
         if len(rival_move) > 0:
             rival_move_info = get_move_type(rival_move)
