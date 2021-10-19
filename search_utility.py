@@ -35,6 +35,8 @@ def action_in_tree(path_list, action):
 
 
 def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves=None):
+    if len(path_list) > 100:
+        return None
     if prev_moves is None:
         my_cards.sort()
         other_cards.sort()
@@ -46,11 +48,11 @@ def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves
     my_bombs.extend(my_gener.gen_type_5_king_bomb())
     legal_move_tree = []
     rival_move_info = {}
-    type_range = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ,14]
+    type_range = [4, 5, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     if rival_move is not None:
         if len(rival_move) > 0:
             rival_move_info = get_move_type(rival_move)
-            type_range = [rival_move_info["type"], 4, 5]
+            type_range = [4, 5, rival_move_info["type"]]
         else:
             rival_move = None
 
@@ -105,7 +107,7 @@ def search_actions(my_cards, other_cards, path_list, rival_move=None, prev_moves
                 else:
                     path_list.append([move])
     legal_moves_count = len(legal_move_tree)
-    del my_gener, other_gener, my_bombs, other_bombs, my_cards, other_cards, legal_move_tree, rival_move_info
+    del my_gener, other_gener, my_bombs, other_bombs, my_cards, other_cards, legal_move_tree
     return None
     # if legal_moves_count == 0:
     #     return None
@@ -141,8 +143,8 @@ def check_42(path):
 
 
 if __name__ == "__main__":
-    my_cards =[5,5,5,13,12]
-    other_cards = [11, 4]
+    my_cards =[5,5,5,5,6,6,6,6,7,7,8,8,9,9,13]
+    other_cards = [20, 4]
     st = time.time()
     paths = []
     result = search_actions(my_cards, other_cards, paths)
@@ -151,6 +153,6 @@ if __name__ == "__main__":
     # print(paths)
     for path in paths:
         print(path)
+    print(len(paths))
     path = select_optimal_path(paths)
     print("optimal", path)
-    print(action_in_tree(result, [5,5,5,12]))
