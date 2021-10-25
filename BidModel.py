@@ -6,6 +6,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 import time
+import torch.nn.functional as F
 
 
 def EnvToOnehot(cards):
@@ -15,6 +16,7 @@ def EnvToOnehot(cards):
     for i in range(0, 15):
         Onehot[:cards.count(i),i] = 1
     return Onehot
+
 
 def RealToOnehot(cards):
     RealCard2EnvCard = {'3': 0, '4': 1, '5': 2, '6': 3, '7': 4,
@@ -30,51 +32,65 @@ def RealToOnehot(cards):
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
+        # input: 1 * 60
+        self.conv1 = nn.Conv1d(1, 16, kernel_size=(3,), padding=1)  # 32 * 60
+        self.dense1 = nn.Linear(1020, 1024)
+        self.dense2 = nn.Linear(1024, 512)
+        self.dense3 = nn.Linear(512, 256)
+        self.dense4 = nn.Linear(256, 128)
+        self.dense5 = nn.Linear(128, 1)
 
-        self.fc1 = nn.Linear(60, 512)
-        self.fc2 = nn.Linear(512, 512)
-        self.fc3 = nn.Linear(512, 512)
-        self.fc4 = nn.Linear(512, 512)
-        self.fc5 = nn.Linear(512, 512)
-        self.fc6 = nn.Linear(512, 1)
-        self.dropout5 = nn.Dropout(0.5)
-        self.dropout3 = nn.Dropout(0.3)
-        self.dropout1 = nn.Dropout(0.1)
-
-    def forward(self, input):
-        x = self.fc1(input)
-        x = torch.relu(self.dropout1(self.fc2(x)))
-        x = torch.relu(self.dropout3(self.fc3(x)))
-        x = torch.relu(self.dropout5(self.fc4(x)))
-        x = torch.relu(self.dropout5(self.fc5(x)))
-        x = self.fc6(x)
+    def forward(self, xi):
+        x = xi.unsqueeze(1)
+        x = F.leaky_relu(self.conv1(x))
+        x = x.flatten(1, 2)
+        x = torch.cat((x, xi), 1)
+        x = F.leaky_relu(self.dense1(x))
+        x = F.leaky_relu(self.dense2(x))
+        x = F.leaky_relu(self.dense3(x))
+        x = F.leaky_relu(self.dense4(x))
+        x = self.dense5(x)
         return x
 
 
 UseGPU = False
 device = torch.device('cuda:0')
-net = Net()
-net.eval()
+net_bid = Net()
+net_bid.eval()
+net_farmer = Net()
+net_farmer.eval()
 if UseGPU:
-    net = net.to(device)
+    net_bid = net_bid.to(device)
+    net_farmer = net_farmer.to(device)
 if os.path.exists("./bid_weights.pkl"):
     if torch.cuda.is_available():
-        net.load_state_dict(torch.load('./bid_weights.pkl'))
+        net_bid.load_state_dict(torch.load('./bid_weights.pkl'))
     else:
-        net.load_state_dict(torch.load('./bid_weights.pkl', map_location=torch.device("cpu")))
+        net_bid.load_state_dict(torch.load('./bid_weights.pkl', map_location=torch.device("cpu")))
+if os.path.exists("./farmer_weights.pkl"):
+    if torch.cuda.is_available():
+        net_farmer.load_state_dict(torch.load('./farmer_weights.pkl'))
+    else:
+        net_farmer.load_state_dict(torch.load('./farmer_weights.pkl', map_location=torch.device("cpu")))
+
 
 def predict(cards):
-    input = RealToOnehot(cards)
+    x = RealToOnehot(cards)
     if UseGPU:
-        input = input.to(device)
-    input = torch.flatten(input)
-    win_rate = net(input)
-    return win_rate[0].item()
+        x = x.to(device)
+    x = torch.flatten(x)
+    x = x.unsqueeze(0)
+    score_bid = net_bid(x)
+    score_farmer = net_farmer(x)
+    return score_bid[0].item(), score_farmer[0].item()
+
 
 def predict_env(cards):
-    input = EnvToOnehot(cards)
+    x = EnvToOnehot(cards)
     if UseGPU:
-        input = input.to(device)
-    input = torch.flatten(input)
-    win_rate = net(input)
-    return win_rate[0].item()
+        x = x.to(device)
+    x = torch.flatten(x)
+    x = x.unsqueeze(0)
+    score_bid = net_bid(x)
+    score_farmer = net_farmer(x)
+    return score_bid[0].item(), score_farmer[0].item()

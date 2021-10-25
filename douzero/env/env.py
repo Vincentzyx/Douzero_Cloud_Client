@@ -119,17 +119,19 @@ class Env:
                     force_bid = True
                 for r in range(3):
                     bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
-                    with torch.no_grad():
-                        action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
-                                               torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
-                    if bid_limit <= 0:
-                        if random.random() < 0.5:
-                            action = {"action": 1}  # debug
-                            bid_limit += 1
-                        # wr = BidModel.predict_env(card_play_data[bidding_player])
-                        # if wr >= 0.7:
-                        #     action = {"action": 1}  # debug
-                        #     bid_limit += 1
+                    # with torch.no_grad():
+                    #     action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
+                    #                            torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
+                    # if bid_limit <= 0:
+                    #     if random.random() < 0.5:
+                    #         action = {"action": 1}  # debug
+                    #         bid_limit += 1
+                    bid_score, farmer_score = BidModel.predict_env(card_play_data[bidding_player])
+                    if bid_score * 2 > farmer_score:
+                        action = {"action": 1}  # debug
+                        bid_limit += 1
+                    else:
+                        action = {"action": 0}
 
                     bid_obs_buffer.append({
                         "x_batch": bidding_obs["x_batch"][0],
@@ -157,9 +159,15 @@ class Env:
                     r = 3
                     bidding_player = first_bid
                     bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
-                    with torch.no_grad():
-                        action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
-                                               torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
+                    # with torch.no_grad():
+                    #     action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
+                    #                            torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
+                    bid_score, farmer_score = BidModel.predict_env(card_play_data[bidding_player])
+                    if bid_score * 1.6 > farmer_score:
+                        action = {"action": 1}  # debug
+                        bid_limit += 1
+                    else:
+                        action = {"action": 0}
                     bid_obs_buffer.append({
                         "x_batch": bidding_obs["x_batch"][0],
                         "z_batch": bidding_obs["z_batch"][0],
