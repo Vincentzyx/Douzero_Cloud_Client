@@ -275,10 +275,8 @@ class GameEnv(object):
 
         if len(rival_move) != 0:  # rival_move is not 'pass'
             moves = moves + [[]]
-
         for m in moves:
             m.sort()
-
         return moves
 
     def reset(self):

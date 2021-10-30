@@ -77,6 +77,7 @@ def train(flags):
 
     def update_model(ver, urls, force):
         global model_version, models, updating
+        return
         if updating:
             return
         updating = True
@@ -93,7 +94,7 @@ def train(flags):
             weights = client_helper.download_pkl(url)
             if weights is not None:
                 model_version = ver
-                for position in ["landlord", "landlord_up", "landlord_down", "bidding"]:
+                for position in ["landlord", "landlord_up", "landlord_down"]:
                     if flags.actor_device_cpu:
                         models["cpu"].get_model(position).load_state_dict(weights[position])
                         torch.save(weights[position], "./models/" + position + ".ckpt")
