@@ -121,6 +121,7 @@ def train(flags):
         else:
             print("服务器版本获取失败，更新模型失败")
             return
+        time.sleep(1)
         if not (os.path.exists("./models/landlord.ckpt") and os.path.exists(
                 "./models/landlord_up.ckpt") and os.path.exists("./models/landlord_down.ckpt") and os.path.exists("./models/bidding.ckpt")):
             update_model(model_info["version"], model_info["urls"], True)
