@@ -182,7 +182,7 @@ def train(flags):
     if flags.load_model:
         print("加载模型中，请稍后")
         load_actor_models()
-    for position in ["landlord", "landlord_up", "landlord_down", 'bidding']:
+    for position in ["landlord", "landlord_up", "landlord_down"]:
         if flags.actor_device_cpu:
             models["cpu"].get_model(position).load_state_dict(torch.load("./models/" + position + ".ckpt", map_location="cpu"))
         else:
