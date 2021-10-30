@@ -34,7 +34,7 @@ def compute_loss(logits, targets):
 
 
 batches = []
-program_version = "3.2.0"
+program_version = "4.0.0"
 updating = False
 
 def learn(position, actor_models, model, batch, optimizer, flags, lock):
