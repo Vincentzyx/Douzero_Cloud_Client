@@ -24,7 +24,7 @@ from douzero.env.env import env_version
 
 
 mean_episode_return_buf = {p: deque(maxlen=100) for p in ['landlord', 'landlord_up', 'landlord_down']}
-model_version = 0
+model_version = -1
 models = {}
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -77,7 +77,6 @@ def train(flags):
 
     def update_model(ver, urls, force):
         global model_version, models, updating
-        return
         if updating:
             return
         updating = True
