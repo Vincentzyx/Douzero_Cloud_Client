@@ -77,7 +77,6 @@ def train(flags):
 
     def update_model(ver, urls, force):
         global model_version, models, updating
-        return
         if updating:
             return
         updating = True
