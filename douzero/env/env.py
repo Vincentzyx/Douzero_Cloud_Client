@@ -6,7 +6,7 @@ import BidModel
 
 from douzero.env.game import GameEnv
 
-env_version = "4.0.0"
+env_version = "3.2.2"
 env_url = "http://od.vcccz.com/hechuan/env.py"
 Card2Column = {3: 0, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7,
                11: 8, 12: 9, 13: 10, 14: 11, 17: 12}
@@ -118,27 +118,27 @@ class Env:
                 if bid_limit <= 0:
                     force_bid = True
                 for r in range(3):
-                    # bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
-                    # with torch.no_grad():
-                    #     action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
-                    #                            torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
-                    # if bid_limit <= 0:
-                    #     if random.random() < 0.5:
-                    #         action = {"action": 1}  # debug
-                    #         bid_limit += 1
-                    bid_score, farmer_score = BidModel.predict_env(card_play_data[bidding_player])
-                    if bid_score * 2 > farmer_score:
-                        action = {"action": 1}  # debug
-                        bid_limit += 1
-                    else:
-                        action = {"action": 0}
+                    bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
+                    with torch.no_grad():
+                        action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
+                                               torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
+                    if bid_limit <= 0:
+                        if random.random() < 0.5:
+                            action = {"action": 1}  # debug
+                            bid_limit += 1
+                    # bid_score, farmer_score = BidModel.predict_env(card_play_data[bidding_player])
+                    # if bid_score * 2 > farmer_score:
+                    #     action = {"action": 1}  # debug
+                    #     bid_limit += 1
+                    # else:
+                    #     action = {"action": 0}
 
-                    # bid_obs_buffer.append({
-                    #     "x_batch": bidding_obs["x_batch"][0],
-                    #     "z_batch": bidding_obs["z_batch"][0],
-                    #     "action": action["action"],
-                    #     "pid": bidding_player
-                    # })
+                    bid_obs_buffer.append({
+                        "x_batch": bidding_obs["x_batch"][0],
+                        "z_batch": bidding_obs["z_batch"][0],
+                        "action": action["action"],
+                        "pid": bidding_player
+                    })
                     if action["action"] == 1:
                         last_bid = bidding_player
                         bid_count += 1
@@ -158,22 +158,22 @@ class Env:
                 elif one_count > 1:
                     r = 3
                     bidding_player = first_bid
-                    # bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
-                    # with torch.no_grad():
-                    #     action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
-                    #                            torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
-                    bid_score, farmer_score = BidModel.predict_env(card_play_data[bidding_player])
-                    if bid_score * 1.6 > farmer_score:
-                        action = {"action": 1}  # debug
-                        bid_limit += 1
-                    else:
-                        action = {"action": 0}
-                    # bid_obs_buffer.append({
-                    #     "x_batch": bidding_obs["x_batch"][0],
-                    #     "z_batch": bidding_obs["z_batch"][0],
-                    #     "action": action["action"],
-                    #     "pid": bidding_player
-                    # })
+                    bidding_obs = _get_obs_for_bid(bidding_player, bid_info, card_play_data[bidding_player])
+                    with torch.no_grad():
+                        action = model.forward("bidding", torch.tensor(bidding_obs["z_batch"], device=device),
+                                               torch.tensor(bidding_obs["x_batch"], device=device), flags=flags)
+                    # bid_score, farmer_score = BidModel.predict_env(card_play_data[bidding_player])
+                    # if bid_score * 1.6 > farmer_score:
+                    #     action = {"action": 1}  # debug
+                    #     bid_limit += 1
+                    # else:
+                    #     action = {"action": 0}
+                    bid_obs_buffer.append({
+                        "x_batch": bidding_obs["x_batch"][0],
+                        "z_batch": bidding_obs["z_batch"][0],
+                        "action": action["action"],
+                        "pid": bidding_player
+                    })
                     if action["action"] == 1:
                         last_bid = bidding_player
                         bid_count += 1
@@ -281,10 +281,12 @@ class Env:
         winner = self._game_winner
         bomb_num = self._game_bomb_num
         self_bomb_num = self._env.pos_bomb_num[pos]
-        if winner == 'landlord' and pos == "landlord" or winner != "landlord" and pos in ["landlord_up", "landlord_down"]:
-            return 2 ** bomb_num - self._env.step_count * 0.001
+        if winner == 'landlord' and pos == "landlord" or winner != "landlord" and pos in ["landlord_up",
+                                                                                          "landlord_down"]:
+            return 1 - self._env.step_count * 0.00025
         else:
-            return -1 * 2 ** bomb_num
+            return -1
+
 
     def _get_reward_bidding(self, pos):
         """

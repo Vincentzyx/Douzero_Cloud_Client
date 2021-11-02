@@ -24,7 +24,7 @@ from douzero.env.env import env_version
 
 
 mean_episode_return_buf = {p: deque(maxlen=100) for p in ['landlord', 'landlord_up', 'landlord_down']}
-model_version = -1
+model_version = 0
 models = {}
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -34,7 +34,7 @@ def compute_loss(logits, targets):
 
 
 batches = []
-program_version = "4.0.0"
+program_version = "4.1.0"
 updating = False
 
 def learn(position, actor_models, model, batch, optimizer, flags, lock):
@@ -77,6 +77,7 @@ def train(flags):
 
     def update_model(ver, urls, force):
         global model_version, models, updating
+        return
         if updating:
             return
         updating = True
@@ -121,9 +122,8 @@ def train(flags):
         else:
             print("服务器版本获取失败，更新模型失败")
             return
-        time.sleep(1)
         if not (os.path.exists("./models/landlord.ckpt") and os.path.exists(
-                "./models/landlord_up.ckpt") and os.path.exists("./models/landlord_down.ckpt") and os.path.exists("./models/bidding.ckpt")):
+                "./models/landlord_up.ckpt") and os.path.exists("./models/landlord_down.ckpt")):
             update_model(model_info["version"], model_info["urls"], True)
 
     # def check_update_model(force=False):

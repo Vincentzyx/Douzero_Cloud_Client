@@ -93,15 +93,6 @@ def path_to_str(path):
     return pstr
 
 
-def have_bomb(cards):
-    if 20 in cards and 30 in cards:
-        return True
-    for i in [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 17]:
-        if cards.count(i) == 4:
-            return True
-    return False
-
-
 def act(i, device, batch_queues, model, flags):
     positions = ['landlord', 'landlord_up', 'landlord_down', 'bidding']
     for pos in positions:
@@ -119,31 +110,82 @@ def act(i, device, batch_queues, model, flags):
         obs_z_buf = {p: [] for p in positions}
         size = {p: 0 for p in positions}
         type_buf = {p: [] for p in positions}
+        info_buf = {p: [] for p in positions}
         pos_buf = {p: [] for p in positions}
         obs_x_batch_buf = {p: [] for p in positions}
 
         position_index = {"landlord": 31, "landlord_up": 32, "landlord_down": 33}
+        bid_type_index = {"landlord": 41, "landlord_up": 42, "landlord_down": 43}
+        bid_type_map = {41: "landlord", 42: "landlord_up", 43: "landlord_down"}
+
         position, obs, env_output = env.initial(model, device, flags=flags)
-        infoset = env_output["infoset"]
+        bid_obs_buffer = env_output["begin_buf"]["bid_obs_buffer"]
+        multiply_obs_buffer = env_output["begin_buf"]["multiply_obs_buffer"]
         while True:
+            # print("posi", position)
+            # for bid_obs in bid_obs_buffer:
+            #     obs_z_buf["bidding"].append(bid_obs['z_batch'])
+            #     obs_x_batch_buf["bidding"].append(bid_obs["x_batch"])
+            #     type_buf["bidding"].append(bid_obs["action"])
+            #     pos_buf["bidding"].append(bid_obs["position"])
+            #     size["bidding"] += 1
+            # for mul_obs in multiply_obs_buffer:
+            #     obs_z_buf[mul_obs["position"]].append(mul_obs['z_batch'])
+            #     obs_x_batch_buf[mul_obs["position"]].append(mul_obs["x_batch"])
+            #     type_buf[mul_obs["position"]].append(2)
+            #     size[mul_obs["position"]] += 1
             while True:
                 with torch.no_grad():
                     agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
-                    if have_bomb(infoset.player_hand_cards):
-                        _action_idx = int(agent_output['action'][1].cpu().detach().numpy())  # ADP
-                    else:
-                        _action_idx = int(agent_output['action'][0].cpu().detach().numpy())  # WP
+                _action_idx = agent_output['action']
                 action = obs['legal_actions'][_action_idx]
+                # # 对于能直接出完的情况做特判
+                # infoset = env_output["infoset"]
+                # score = agent_output["action_list"][_action_idx]
+                # if len(action) != len(infoset.player_hand_cards):
+                #     for l_action in obs['legal_actions']:
+                #         if len(l_action) == len(infoset.player_hand_cards):
+                #             m_type = md.get_move_type(l_action)
+                #             if m_type["type"] not in [md.TYPE_14_4_22, md.TYPE_13_4_2]:
+                #                 print("检测到可直接出完出法:", action_to_str(action), "->", action_to_str(l_action))
+                #                 action = l_action
+                #                 score = 10000
+                #     last_two_moves = infoset.last_two_moves
+                #     rival_move = None
+                #     if last_two_moves[0]:
+                #         rival_move = last_two_moves[0]
+                #     elif last_two_moves[1]:
+                #         rival_move = last_two_moves[1]
+                #     if score != 10000 and score > 0.0625:
+                #         path_list = []
+                #         search_actions(infoset.player_hand_cards, infoset.other_hand_cards,
+                #                        path_list, rival_move=rival_move)
+                #         if len(path_list) > 0:
+                #             one_path = action_in_tree(path_list, action)
+                #             if one_path is not None:
+                #                 # print("检测到可直接出完路径", len(path_list),"条", path_to_str(one_path), "，AI决策正确")
+                #                 pass
+                #             else:
+                #                 path = select_optimal_path(path_list)
+                #                 if not check_42(path):
+                #                     if action != path[0]:
+                #                         print("检测到可直接出完路径:", action_to_str(action), "->", path_to_str(path))
+                #                         action = path[0]
+                #                         score = 20000
+                # # --------------------------
+                # if score != 10000 and score != 20000:
                 obs_z_buf[position].append(torch.vstack((_cards2tensor(action).unsqueeze(0), env_output['obs_z'])).float())
                 x_batch = env_output['obs_x_no_action'].float()
                 obs_x_batch_buf[position].append(x_batch)
                 type_buf[position].append(position_index[position])
-                position, obs, env_output = env.step(action, model, device, flags=flags)
-                infoset = env_output["infoset"]
                 size[position] += 1
+                position, obs, env_output = env.step(action, model, device, flags=flags)
                 if env_output['done']:
+                    bid_obs_buffer = env_output["begin_buf"]["bid_obs_buffer"]
+                    multiply_obs_buffer = env_output["begin_buf"]["multiply_obs_buffer"]
                     for p in positions:
                         diff = size[p] - len(target_buf[p])
+                        # print(p, diff)
                         if diff > 0:
                             done_buf[p].extend([False for _ in range(diff-1)])
                             done_buf[p].append(True)
@@ -161,10 +203,12 @@ def act(i, device, batch_queues, model, flags):
                                     else:
                                         episode_return = -env_output['episode_return']["bid"][pos]
                                     episode_return_buf[p].append(episode_return)
+                                    # print(p, episode_return)
                                     target_buf[p].append(episode_return)
                     break
             for p in positions:
                 if size[p] > T:
+                    # print(p, "epr", torch.stack([torch.tensor(ndarr, device="cpu") for ndarr in episode_return_buf[p][:T]]),)
                     batch_queues[p].put({
                         "done": torch.stack([torch.tensor(ndarr, device="cpu") for ndarr in done_buf[p][:T]]),
                         "episode_return": torch.stack([torch.tensor(ndarr, device="cpu") for ndarr in episode_return_buf[p][:T]]),
@@ -181,6 +225,7 @@ def act(i, device, batch_queues, model, flags):
                     type_buf[p] = type_buf[p][T:]
                     pos_buf[p] = pos_buf[p][T:]
                     size[p] -= T
+
     except KeyboardInterrupt:
         pass
     except Exception as e:
