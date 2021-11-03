@@ -129,10 +129,9 @@ class Env:
                     # else:
                     #     action = {"action": 0}
                     action = {"action": 0}
-                    if bid_limit <= 0:
-                        if random.random() < 0.5:
-                            action = {"action": 1}  # debug
-                            bid_limit += 1
+                    if random.random() < 0.5:
+                        action = {"action": 1}  # debug
+                        bid_limit += 1
 
                     # bid_obs_buffer.append({
                     #     "x_batch": bidding_obs["x_batch"][0],
