@@ -77,6 +77,15 @@ class GameEnv(object):
             card_play_data['landlord_up']
         self.info_sets['landlord_down'].player_hand_cards = \
             card_play_data['landlord_down']
+
+        self.info_sets["landlord_down"].upper_hand_cards = self.info_sets[
+            "landlord"].player_hand_cards
+        self.info_sets["landlord_down"].lower_hand_cards = self.info_sets[
+            "landlord_up"].player_hand_cards
+        self.info_sets["landlord_up"].upper_hand_cards = self.info_sets[
+            "landlord_down"].player_hand_cards
+        self.info_sets["landlord_up"].lower_hand_cards = self.info_sets[
+            "landlord"].player_hand_cards
         self.three_landlord_cards = card_play_data['three_landlord_cards']
         self.get_acting_player_position()
         self.game_infoset = self.get_infoset()
@@ -119,6 +128,15 @@ class GameEnv(object):
         return self.bomb_num
 
     def step(self):
+        if self.acting_player_position == "landlord":
+            self.info_sets[self.acting_player_position].upper_hand_cards = self.info_sets["landlord_up"].player_hand_cards
+            self.info_sets[self.acting_player_position].lower_hand_cards = self.info_sets["landlord_down"].player_hand_cards
+        elif self.acting_player_position == "landlord_down":
+            self.info_sets[self.acting_player_position].upper_hand_cards = self.info_sets["landlord"].player_hand_cards
+            self.info_sets[self.acting_player_position].lower_hand_cards = self.info_sets["landlord_up"].player_hand_cards
+        elif self.acting_player_position == "landlord_up":
+            self.info_sets[self.acting_player_position].upper_hand_cards = self.info_sets["landlord_down"].player_hand_cards
+            self.info_sets[self.acting_player_position].lower_hand_cards = self.info_sets["landlord"].player_hand_cards
         action = self.players[self.acting_player_position].act(
             self.game_infoset)
         self.step_count += 1
@@ -275,8 +293,10 @@ class GameEnv(object):
 
         if len(rival_move) != 0:  # rival_move is not 'pass'
             moves = moves + [[]]
+
         for m in moves:
             m.sort()
+
         return moves
 
     def reset(self):
@@ -377,6 +397,10 @@ class InfoSet(object):
         self.player_position = player_position
         # The hand cands of the current player. A list.
         self.player_hand_cards = None
+        # The hand cards of the upper. A list.
+        self.upper_hand_cards = None
+        # The hand cards of the lower. A list.
+        self.lower_hand_cards = None
         # The number of cards left for each player. It is a dict with str-->int
         self.num_cards_left_dict = None
         # The three landload cards. A list.
