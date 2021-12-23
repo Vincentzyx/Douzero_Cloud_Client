@@ -14,7 +14,7 @@ import pickle
 import random
 
 from .file_writer import FileWriter
-from .models import Model
+from .models import Model, MingpaiModels
 from .utils import get_batch, log, create_env, create_optimizers, act
 import client_helper
 import bit_helper
@@ -90,7 +90,9 @@ def train(flags):
                 return
             print("更新中，请耐心等待")
             st = time.time()
-            weights = client_helper.download_pkl(url)
+            # weights = client_helper.download_pkl(url)
+            with open("model_resnet.pkl", "rb") as f:
+                weights = pickle.load(f)
             if weights is not None:
                 model_version = ver
                 for position in ["landlord", "landlord_up", "landlord_down"]:
@@ -148,7 +150,7 @@ def train(flags):
     global models
     models = {}
     for device in device_iterator:
-        model = Model(device="cpu")
+        model = MingpaiModels(device="cpu")
         model.share_memory()
         model.eval()
         models[device] = model
@@ -159,10 +161,10 @@ def train(flags):
     batch_queues = {"landlord": ctx.SimpleQueue(), "landlord_up": ctx.SimpleQueue(), "landlord_down": ctx.SimpleQueue(), "bidding": ctx.SimpleQueue()}
 
     # Learner model for training
-    learner_model = Model(device=flags.training_device)
+    learner_model = None
 
     # Create optimizers
-    optimizers = create_optimizers(flags, learner_model)
+    optimizers = None
 
     # Stat Keys
     stat_keys = [
@@ -294,7 +296,7 @@ def train(flags):
 
     for device in device_iterator:
         for i in range(flags.num_threads):
-            for position in ['landlord', 'landlord_up', 'landlord_down', 'bidding']:
+            for position in ['landlord', 'landlord_up', 'landlord_down']:
                 thread = threading.Thread(
                     target=batch_and_learn, name='batch-and-learn-%d' % i, args=(i,device,position,locks[device][position],position_locks[position]))
                 thread.start()

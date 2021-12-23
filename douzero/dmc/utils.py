@@ -94,7 +94,7 @@ def path_to_str(path):
 
 
 def act(i, device, batch_queues, model, flags):
-    positions = ['landlord', 'landlord_up', 'landlord_down', 'bidding']
+    positions = ['landlord', 'landlord_up', 'landlord_down']
     for pos in positions:
         model.models[pos].to(torch.device(device if device == "cpu" else ("cuda:"+str(device))))
     try:
@@ -110,79 +110,23 @@ def act(i, device, batch_queues, model, flags):
         obs_z_buf = {p: [] for p in positions}
         size = {p: 0 for p in positions}
         type_buf = {p: [] for p in positions}
-        info_buf = {p: [] for p in positions}
-        pos_buf = {p: [] for p in positions}
         obs_x_batch_buf = {p: [] for p in positions}
 
         position_index = {"landlord": 31, "landlord_up": 32, "landlord_down": 33}
-        bid_type_index = {"landlord": 41, "landlord_up": 42, "landlord_down": 43}
-        bid_type_map = {41: "landlord", 42: "landlord_up", 43: "landlord_down"}
-
         position, obs, env_output = env.initial(model, device, flags=flags)
-        bid_obs_buffer = env_output["begin_buf"]["bid_obs_buffer"]
-        multiply_obs_buffer = env_output["begin_buf"]["multiply_obs_buffer"]
         while True:
-            # print("posi", position)
-            # for bid_obs in bid_obs_buffer:
-            #     obs_z_buf["bidding"].append(bid_obs['z_batch'])
-            #     obs_x_batch_buf["bidding"].append(bid_obs["x_batch"])
-            #     type_buf["bidding"].append(bid_obs["action"])
-            #     pos_buf["bidding"].append(bid_obs["position"])
-            #     size["bidding"] += 1
-            # for mul_obs in multiply_obs_buffer:
-            #     obs_z_buf[mul_obs["position"]].append(mul_obs['z_batch'])
-            #     obs_x_batch_buf[mul_obs["position"]].append(mul_obs["x_batch"])
-            #     type_buf[mul_obs["position"]].append(2)
-            #     size[mul_obs["position"]] += 1
             while True:
                 with torch.no_grad():
                     agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
-                _action_idx = agent_output['action']
+                _action_idx = int(agent_output['action'].cpu().detach().numpy())
                 action = obs['legal_actions'][_action_idx]
-                # # 对于能直接出完的情况做特判
-                # infoset = env_output["infoset"]
-                # score = agent_output["action_list"][_action_idx]
-                # if len(action) != len(infoset.player_hand_cards):
-                #     for l_action in obs['legal_actions']:
-                #         if len(l_action) == len(infoset.player_hand_cards):
-                #             m_type = md.get_move_type(l_action)
-                #             if m_type["type"] not in [md.TYPE_14_4_22, md.TYPE_13_4_2]:
-                #                 print("检测到可直接出完出法:", action_to_str(action), "->", action_to_str(l_action))
-                #                 action = l_action
-                #                 score = 10000
-                #     last_two_moves = infoset.last_two_moves
-                #     rival_move = None
-                #     if last_two_moves[0]:
-                #         rival_move = last_two_moves[0]
-                #     elif last_two_moves[1]:
-                #         rival_move = last_two_moves[1]
-                #     if score != 10000 and score > 0.0625:
-                #         path_list = []
-                #         search_actions(infoset.player_hand_cards, infoset.other_hand_cards,
-                #                        path_list, rival_move=rival_move)
-                #         if len(path_list) > 0:
-                #             one_path = action_in_tree(path_list, action)
-                #             if one_path is not None:
-                #                 # print("检测到可直接出完路径", len(path_list),"条", path_to_str(one_path), "，AI决策正确")
-                #                 pass
-                #             else:
-                #                 path = select_optimal_path(path_list)
-                #                 if not check_42(path):
-                #                     if action != path[0]:
-                #                         print("检测到可直接出完路径:", action_to_str(action), "->", path_to_str(path))
-                #                         action = path[0]
-                #                         score = 20000
-                # # --------------------------
-                # if score != 10000 and score != 20000:
                 obs_z_buf[position].append(torch.vstack((_cards2tensor(action).unsqueeze(0), env_output['obs_z'])).float())
                 x_batch = env_output['obs_x_no_action'].float()
                 obs_x_batch_buf[position].append(x_batch)
                 type_buf[position].append(position_index[position])
-                size[position] += 1
                 position, obs, env_output = env.step(action, model, device, flags=flags)
+                size[position] += 1
                 if env_output['done']:
-                    bid_obs_buffer = env_output["begin_buf"]["bid_obs_buffer"]
-                    multiply_obs_buffer = env_output["begin_buf"]["multiply_obs_buffer"]
                     for p in positions:
                         diff = size[p] - len(target_buf[p])
                         # print(p, diff)
@@ -190,21 +134,10 @@ def act(i, device, batch_queues, model, flags):
                             done_buf[p].extend([False for _ in range(diff-1)])
                             done_buf[p].append(True)
                             if p != "bidding":
-                                episode_return = env_output['episode_return']["play"][p]
+                                episode_return = env_output['episode_return']["play"][p] if p == 'landlord' else -env_output['episode_return']["play"][p]
                                 episode_return_buf[p].extend([0.0 for _ in range(diff-1)])
                                 episode_return_buf[p].append(episode_return)
                                 target_buf[p].extend([episode_return for _ in range(diff)])
-                            else:
-                                offset = len(target_buf[p])
-                                for index in range(diff):
-                                    pos = pos_buf[p][index+offset]
-                                    if pos == "landlord":
-                                        episode_return = env_output['episode_return']["bid"]["landlord"]
-                                    else:
-                                        episode_return = -env_output['episode_return']["bid"][pos]
-                                    episode_return_buf[p].append(episode_return)
-                                    # print(p, episode_return)
-                                    target_buf[p].append(episode_return)
                     break
             for p in positions:
                 if size[p] > T:
@@ -223,7 +156,6 @@ def act(i, device, batch_queues, model, flags):
                     obs_x_batch_buf[p] = obs_x_batch_buf[p][T:]
                     obs_z_buf[p] = obs_z_buf[p][T:]
                     type_buf[p] = type_buf[p][T:]
-                    pos_buf[p] = pos_buf[p][T:]
                     size[p] -= T
 
     except KeyboardInterrupt:
@@ -233,6 +165,7 @@ def act(i, device, batch_queues, model, flags):
         traceback.print_exc()
         print()
         raise e
+
 
 def _cards2tensor(list_cards):
     """
