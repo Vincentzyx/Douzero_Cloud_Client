@@ -90,9 +90,9 @@ def train(flags):
                 return
             print("更新中，请耐心等待")
             st = time.time()
-            # weights = client_helper.download_pkl(url)
-            with open("model_resnet.pkl", "rb") as f:
-                weights = pickle.load(f)
+            weights = client_helper.download_pkl(url)
+            # with open("model_resnet.pkl", "rb") as f:
+            #     weights = pickle.load(f)
             if weights is not None:
                 model_version = ver
                 for position in ["landlord", "landlord_up", "landlord_down"]:
