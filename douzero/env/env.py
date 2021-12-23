@@ -84,9 +84,9 @@ class Env:
             cards_llu = _deck[17:34]
             cards_lld = _deck[34:51]
             three_llc = _deck[51:54]
-            score1 = BidModel.predict_env(cards_ll)
-            score2 = BidModel.predict_env(cards_llu)
-            score3 = BidModel.predict_env(cards_lld)
+            score1 = BidModel.predict_env(cards_ll)[0]
+            score2 = BidModel.predict_env(cards_llu)[0]
+            score3 = BidModel.predict_env(cards_lld)[0]
             if score2 > score1:
                 cards_ll, cards_llu = cards_llu, cards_ll
             if score3 > score1:
@@ -106,7 +106,7 @@ class Env:
             return get_obs(self.infoset), {
                 "bid_obs_buffer": None,
                 "multiply_obs_buffer": None
-            }
+            }, self.infoset
 
     def step(self, action):
         """

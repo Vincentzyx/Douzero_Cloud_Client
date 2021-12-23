@@ -91,6 +91,7 @@ def train(flags):
             print("更新中，请耐心等待")
             st = time.time()
             weights = client_helper.download_pkl(url)
+            # weights = None
             # with open("model_resnet.pkl", "rb") as f:
             #     weights = pickle.load(f)
             if weights is not None:
@@ -270,8 +271,7 @@ def train(flags):
         nonlocal frames, position_frames, stats
         while frames < flags.total_frames:
             batch = get_batch(batch_queues, position, flags, local_lock)
-            _stats = learn(position, models, learner_model.get_model(position), batch,
-                           optimizers[position], flags, position_lock)
+            _stats = learn(position, models, None, batch, None, flags, position_lock)
             with lock:
                 for k in _stats:
                     stats[k] = _stats[k]
