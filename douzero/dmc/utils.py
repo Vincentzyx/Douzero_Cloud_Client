@@ -184,16 +184,17 @@ def _cards2tensor(list_cards):
     if len(list_cards) == 0:
         return torch.zeros(54, dtype=torch.int8)
 
-    matrix = np.zeros([4, 13], dtype=np.int8)
-    jokers = np.zeros(2, dtype=np.int8)
+    matrix = np.zeros([4, 14], dtype=np.int8)
+    joker_cnt = 0
     counter = Counter(list_cards)
     for card, num_times in counter.items():
         if card < 20:
             matrix[:, Card2Column[card]] = NumOnes2Array[num_times]
         elif card == 20:
-            jokers[0] = 1
+            joker_cnt |= 0b01
         elif card == 30:
-            jokers[1] = 1
-    matrix = np.concatenate((matrix.flatten('F'), jokers))
+            joker_cnt |= 0b10
+    matrix[:, 13] = NumOnesJoker2Array[joker_cnt]
+    matrix = matrix.flatten('F')[:-2]
     matrix = torch.from_numpy(matrix)
     return matrix
