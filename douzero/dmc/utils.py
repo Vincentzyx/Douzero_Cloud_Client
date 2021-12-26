@@ -23,6 +23,11 @@ NumOnes2Array = {0: np.array([0, 0, 0, 0]),
                  3: np.array([1, 1, 1, 0]),
                  4: np.array([1, 1, 1, 1])}
 
+NumOnesJoker2Array = {0: np.array([0, 0, 0, 0]),
+                      1: np.array([1, 0, 0, 0]),
+                      2: np.array([0, 1, 0, 0]),
+                      3: np.array([1, 1, 0, 0])}
+
 shandle = logging.StreamHandler()
 shandle.setFormatter(
     logging.Formatter(
@@ -116,10 +121,13 @@ def act(i, device, batch_queues, model, flags):
         position, obs, env_output = env.initial(model, device, flags=flags)
         while True:
             while True:
-                with torch.no_grad():
-                    agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
-                _action_idx = int(agent_output['action'].cpu().detach().numpy())
-                action = obs['legal_actions'][_action_idx]
+                if len(obs['legal_actions']) > 1:
+                    with torch.no_grad():
+                        agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], flags=flags)
+                    _action_idx = int(agent_output['action'].cpu().detach().numpy())
+                    action = obs['legal_actions'][_action_idx]
+                else:
+                    action = obs['legal_actions'][0]
                 obs_z_buf[position].append(torch.vstack((_cards2tensor(action).unsqueeze(0), env_output['obs_z'])).float())
                 x_batch = env_output['obs_x_no_action'].float()
                 obs_x_batch_buf[position].append(x_batch)
@@ -176,16 +184,17 @@ def _cards2tensor(list_cards):
     if len(list_cards) == 0:
         return torch.zeros(54, dtype=torch.int8)
 
-    matrix = np.zeros([4, 13], dtype=np.int8)
-    jokers = np.zeros(2, dtype=np.int8)
+    matrix = np.zeros([4, 14], dtype=np.int8)
+    joker_cnt = 0
     counter = Counter(list_cards)
     for card, num_times in counter.items():
         if card < 20:
             matrix[:, Card2Column[card]] = NumOnes2Array[num_times]
         elif card == 20:
-            jokers[0] = 1
+            joker_cnt |= 0b01
         elif card == 30:
-            jokers[1] = 1
-    matrix = np.concatenate((matrix.flatten('F'), jokers))
+            joker_cnt |= 0b10
+    matrix[:, 13] = NumOnesJoker2Array[num_times]
+    matrix = matrix.flatten('F')[:-2]
     matrix = torch.from_numpy(matrix)
     return matrix

@@ -2,6 +2,7 @@ from copy import deepcopy
 from . import move_detector as md, move_selector as ms
 from .move_generator import MovesGener
 import random
+import pickle
 
 EnvCard2RealCard = {3: '3', 4: '4', 5: '5', 6: '6', 7: '7',
                     8: '8', 9: '9', 10: '10', 11: 'J', 12: 'Q',
@@ -383,7 +384,7 @@ class GameEnv(object):
             {pos: self.info_sets[pos].player_hand_cards
              for pos in ['landlord', 'landlord_up', 'landlord_down']}
 
-        return deepcopy(self.info_sets[self.acting_player_position])
+        return pickle.loads(pickle.dumps(self.info_sets[self.acting_player_position]))
 
 class InfoSet(object):
     """

@@ -17,6 +17,11 @@ NumOnes2Array = {0: np.array([0, 0, 0, 0]),
                  3: np.array([1, 1, 1, 0]),
                  4: np.array([1, 1, 1, 1])}
 
+NumOnesJoker2Array = {0: np.array([0, 0, 0, 0]),
+                      1: np.array([1, 0, 0, 0]),
+                      2: np.array([0, 1, 0, 0]),
+                      3: np.array([1, 1, 0, 0])}
+
 deck = []
 for i in range(3, 15):
     deck.extend([i for _ in range(4)])
@@ -312,17 +317,18 @@ def _cards2array(list_cards):
     if len(list_cards) == 0:
         return np.zeros(54, dtype=np.int8)
 
-    matrix = np.zeros([4, 13], dtype=np.int8)
-    jokers = np.zeros(2, dtype=np.int8)
+    matrix = np.zeros([4, 14], dtype=np.int8)
+    joker_cnt = 0b00
     counter = Counter(list_cards)
     for card, num_times in counter.items():
         if card < 20:
             matrix[:, Card2Column[card]] = NumOnes2Array[num_times]
         elif card == 20:
-            jokers[0] = 1
+            joker_cnt |= 0b01
         elif card == 30:
-            jokers[1] = 1
-    return np.concatenate((matrix.flatten('F'), jokers))
+            joker_cnt |= 0b10
+    matrix[:, 13] = NumOnesJoker2Array[joker_cnt]
+    return matrix.flatten('F')[:-2]
 
 
 # def _action_seq_list2array(action_seq_list):
@@ -353,8 +359,8 @@ def _action_seq_list2array(action_seq_list, new_model=True):
     """
 
     if new_model:
-        position_map = {"landlord": 0, "landlord_up": 1, "landlord_down": 2}
-        action_seq_array = np.ones((len(action_seq_list), 54)) * -1  # Default Value -1 for not using area
+        # position_map = {"landlord": 0, "landlord_up": 1, "landlord_down": 2}
+        action_seq_array = np.full((len(action_seq_list), 54), -1)  # Default Value -1 for not using area
         for row, list_cards in enumerate(action_seq_list):
             if list_cards != []:
                 action_seq_array[row, :54] = _cards2array(list_cards[1])
@@ -838,10 +844,10 @@ def _get_obs_mingpai(infoset, position):
     landlord_down_num_cards_left = _get_one_hot_array(
         infoset.num_cards_left_dict['landlord_down'], 17)
 
-    other_handcards_left_list = []
-    for pos in ["landlord", "landlord_up", "landlord_up"]:
-        if pos != position:
-            other_handcards_left_list.extend(infoset.all_handcards[pos])
+    # other_handcards_left_list = []
+    # for pos in ["landlord", "landlord_up", "landlord_up"]:
+    #     if pos != position:
+    #         other_handcards_left_list.extend(infoset.all_handcards[pos])
 
     # landlord_played_cards = _cards2array(
     #     infoset.played_cards['landlord'])
@@ -884,9 +890,7 @@ def _get_obs_mingpai(infoset, position):
         z[np.newaxis, :, :],
         num_legal_actions, axis=0)
     my_action_batch = my_action_batch[:,np.newaxis,:]
-    z_batch = np.zeros([len(_z_batch),37,54],int)
-    for i in range(0,len(_z_batch)):
-        z_batch[i] = np.vstack((my_action_batch[i],_z_batch[i]))
+    z_batch = np.concatenate((my_action_batch,_z_batch), axis=1)
     obs = {
         'position': position,
         'x_batch': x_batch.astype(np.float32),
